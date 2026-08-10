@@ -1,74 +1,251 @@
 ---
 import BaseLayout from "@layouts/BaseLayout.astro";
 import Breadcrumbs from "@components/Breadcrumbs.astro";
+import CTAButton from "@components/CTAButton.astro";
+import PhoneCTAButton from "@components/PhoneCTAButton.astro";
 import LeadForm from "@components/LeadForm.astro";
-import { BRAND } from "~/lib/brand";
+import TrustBar from "@components/TrustBar.astro";
+import Faq from "@components/Faq.astro";
+import { faqPageJsonLd } from "~/lib/seo";
 
-// Quality gate: this page stays noindex until the owner supplies real financing
-// terms (provider, plans) in business-info.json. NEVER invent offers/APRs.
-const hasRealFinancing = BRAND.financing.trim().length > 0;
+/**
+ * Customer-facing financing guide. Lender list and order supplied by the
+ * owner (2026-08-10); every lender fact verified + sourced in
+ * docs/research-facts.md Sheet 7 — amounts/terms that could NOT be verified
+ * are deliberately omitted. NEVER add an APR, fee, or approval-speed claim.
+ * Northvale is not a lender; the disclaimer below the cards is load-bearing.
+ */
+
+interface Lender {
+  name: string;
+  badge: string;
+  blurb: string;
+  goodToKnow: string;
+  href: string;
+  cta: string;
+}
+
+const LENDERS: Lender[] = [
+  {
+    name: "Acorn Finance",
+    badge: "Start here",
+    blurb:
+      "One short form, many offers. Acorn is a comparison marketplace: it shows you personalized offers from its network of lenders — up to $100,000, with terms up to 20 years for qualifying borrowers — so you can see your real options side by side.",
+    goodToKnow:
+      "Checking your offers uses a soft credit pull, so your score isn't affected until you actually apply with a lender you picked.",
+    href: "https://www.acornfinance.com/borrowers/",
+    cta: "Compare offers",
+  },
+  {
+    name: "LightStream",
+    badge: "Good–excellent credit",
+    blurb:
+      "A straightforward fixed-rate loan from LightStream (part of Truist) that never touches your house: no equity needed, no appraisal, no lien. Loans run $5,000–$100,000, with terms up to 20 years on larger home-improvement loans.",
+    goodToKnow:
+      "There's no preview step — applying is a full credit application — so LightStream fits best when your credit is strong and you're ready to move.",
+    href: "https://www.lightstream.com/home-improvement-loan",
+    cta: "Check options",
+  },
+  {
+    name: "Frost Bank",
+    badge: "Texas bank",
+    blurb:
+      "A Texas institution offering home-improvement loans secured by your home, with 15- and 20-year terms — the long runway that keeps the monthly payment low.",
+    goodToKnow:
+      "Frost discounts the rate for automatic payments from a Frost checking or savings account, and the property has to be in Texas.",
+    href: "https://www.frostbank.com/personal/banking/loan-products/improvement",
+    cta: "Explore Frost",
+  },
+  {
+    name: "TDECU",
+    badge: "Texas credit union",
+    blurb:
+      "A Houston-area credit union offering fixed-rate home-equity loans — including a 15-year option — on Texas primary residences.",
+    goodToKnow:
+      "Like every Texas home-equity product, total borrowing against your home is capped at 80% of its value. That's the state constitution, not lender policy.",
+    href: "https://www.tdecu.org/mortgage/home-equity-loan/",
+    cta: "Explore TDECU",
+  },
+  {
+    name: "Figure",
+    badge: "Larger projects",
+    blurb:
+      "An online home-equity line (HELOC) with 10-, 15-, 20-, or 30-year terms and a mostly-online process. In Texas the minimum line is $35,000 — so Figure fits bigger roofs, or a roof plus other projects at once.",
+    goodToKnow:
+      "You draw the full amount at a fixed rate when the line opens, and can draw again as you pay the balance down.",
+    href: "https://www.figure.com/home-equity-line/",
+    cta: "Explore Figure",
+  },
+];
+
+const FAQS = [
+  {
+    q: "Does checking financing offers hurt my credit score?",
+    a: "Prequalification — the “see your offers” step marketplaces like Acorn start with — uses a soft inquiry, which doesn't affect your score. A full application triggers a hard inquiry, which can trim a few points temporarily. The practical rule: compare with soft-check tools first, then submit a full application only where you actually intend to borrow.",
+  },
+  {
+    q: "Home-improvement loan vs. home-equity loan — which fits a roof?",
+    a: "A home-improvement (personal) loan is unsecured: approval rests on your credit, there's no lien on your home, and funding is fast — usually the simplest fit for a typical roof. A home-equity loan or HELOC is secured by the house, which usually means a lower rate and a longer term — a smaller monthly payment — but adds a lien, closing steps, and, in Texas, the constitutional cap of 80% of your home's value on everything borrowed against it.",
+  },
+  {
+    q: "Why does Texas treat home-equity loans differently?",
+    a: "The Texas Constitution gives homesteads unusual protection: everything borrowed against your primary residence can't exceed 80% of its market value, and home-equity loans only work on the home you live in. It's why Texas lenders like Frost and TDECU spell out rules you won't see in other states — and why a home with little equity may be better served by an unsecured loan.",
+  },
+  {
+    q: "Insurance is covering my roof — do I still need financing?",
+    a: "Often only for your deductible and any upgrades you choose. Texas law requires you to pay your own deductible — a contractor offering to “eat it” is breaking the law — and your insurer can require proof you paid it. Financing that out-of-pocket amount yourself is completely legal, and a small personal loan is a common way to do it.",
+  },
+  {
+    q: "Does Northvale offer financing directly?",
+    a: "We're roofers, not a lender — the loan is between you and the lender you choose. What we contribute is the part that protects you: an exact, itemized price in writing before you apply, so you finance the real number instead of an estimate that grows.",
+  },
+];
+
+const seo = {
+  title: "Roof Financing Options — Houston & Montgomery County",
+  description:
+    "How to finance a roof in Texas, in plain English: compare-offer marketplaces, unsecured home-improvement loans, and Texas home-equity options — plus what soft credit checks and the 80% rule mean for you.",
+  pathname: "/financing",
+  jsonLd: [faqPageJsonLd(FAQS)],
+};
 ---
 
-<BaseLayout
-  seo={{
-    title: "Roof Financing Options",
-    description:
-      "Payment and financing options for roof replacement and repair with Northvale Roofing.",
-    pathname: "/financing",
-    noindex: !hasRealFinancing,
-  }}
->
-  {
-    !hasRealFinancing && (
-      <div class="border-b-2 border-[color:var(--color-gold-400)] bg-[color:var(--color-gold-50)] px-4 py-3 text-sm text-[color:var(--color-ink-800)]">
-        <div class="mx-auto max-w-6xl">
-          <strong>NEEDS REAL DATA — draft, not indexed.</strong> This page publishes automatically
-          once real financing terms are entered in Business Info (admin panel). Never list a
-          provider, plan, or rate that isn't confirmed.
-        </div>
+<BaseLayout seo={seo}>
+  {/* Photo header — matches the service-page visual system. Real work photo. */}
+  <section class="relative overflow-hidden bg-[color:var(--color-navy-950)]">
+    <img
+      src="/work/work-06.webp"
+      alt="Completed roof replacement on a two-story home beneath a mature oak tree"
+      class="absolute inset-0 h-full w-full object-cover object-[70%_center]"
+      loading="eager"
+      fetchpriority="high"
+      decoding="async"
+    />
+    <div class="nv-svc-scrim absolute inset-0" aria-hidden="true"></div>
+    <div class="relative mx-auto max-w-6xl px-4 py-14 md:py-20">
+      <Breadcrumbs variant="dark" items={[{ label: "Home", href: "/" }, { label: "Financing" }]} />
+      <h1 class="mt-6 max-w-3xl text-4xl text-white md:text-5xl">Paying for your roof</h1>
+      <div class="rule-gold mt-6" aria-hidden="true"></div>
+      <p class="mt-6 max-w-2xl text-lg leading-relaxed text-[color:var(--color-navy-100)]">
+        A roof is a big check on short notice. When savings shouldn't carry it alone, here are five
+        legitimate ways Houston-area homeowners finance one — from quick unsecured loans to Texas
+        home-equity products — explained in plain English.
+      </p>
+      <div class="mt-7 flex flex-wrap gap-3">
+        <CTAButton href="/contact" label="Get your written price" ctaId="financing-book" />
+        <PhoneCTAButton ctaId="financing-call" variant="ghost-dark" />
       </div>
-    )
-  }
-
-  <section class="page-header-band mx-auto max-w-6xl px-4 py-12 md:py-16">
-    <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Financing" }]} />
-    <h1 class="mt-6 text-4xl md:text-5xl">Paying for your roof</h1>
-    <div class="rule-gold mt-6" aria-hidden="true"></div>
-    <p class="mt-6 max-w-2xl text-lg leading-relaxed text-[color:var(--color-ink-700)]">
-      A roof is a big check on short notice. Here's how payment works with us — always in writing,
-      never a surprise.
-    </p>
+      <ul class="mt-9 flex flex-wrap gap-x-10 gap-y-4 border-t border-white/15 pt-6">
+        <li class="flex items-baseline gap-2.5">
+          <span class="font-serif text-[28px] leading-none text-[color:var(--color-gold-300)]"
+            >In writing</span
+          >
+          <span class="max-w-52 text-[13px] leading-snug text-[color:var(--color-navy-100)]/90"
+            >your exact price before you borrow a dollar</span
+          >
+        </li>
+        <li class="flex items-baseline gap-2.5">
+          <span class="font-serif text-[28px] leading-none text-[color:var(--color-gold-300)]"
+            >5 options</span
+          >
+          <span class="max-w-52 text-[13px] leading-snug text-[color:var(--color-navy-100)]/90"
+            >from soft-check marketplaces to Texas home equity</span
+          >
+        </li>
+        <li class="flex items-baseline gap-2.5">
+          <span class="font-serif text-[28px] leading-none text-[color:var(--color-gold-300)]"
+            >15–20 yrs</span
+          >
+          <span class="max-w-52 text-[13px] leading-snug text-[color:var(--color-navy-100)]/90"
+            >terms available that shrink the monthly payment</span
+          >
+        </li>
+      </ul>
+    </div>
   </section>
 
-  <section class="mx-auto grid max-w-6xl gap-10 px-4 py-12 md:grid-cols-[1fr_400px]">
+  <TrustBar />
+
+  <section class="mx-auto grid max-w-6xl gap-10 px-4 py-10 md:grid-cols-[1fr_400px]">
     <article class="prose-northvale">
-      <h2>Every price in writing, before you commit</h2>
+      <h2>Every price in writing, before you borrow</h2>
       <p>
-        The estimate you sign is itemized — shingle line, underlayment, decking allowance, warranty
-        — and it's the price you pay. Change orders happen only for genuinely hidden conditions,
-        priced from the rates already stated in your estimate.
+        Financing only works when the number is real. The estimate we leave is itemized — shingle
+        line, underlayment, decking allowance, warranty — and it's the price you pay. That's the
+        amount you take to a lender, not a guess that grows after the loan closes.
       </p>
 
-      <h2>Financing</h2>
-      {
-        hasRealFinancing ? (
-          <p>{BRAND.financing}</p>
-        ) : (
-          <p>
-            <em>
-              [NEEDS DATA: financing provider and plan terms — this section publishes once the owner
-              confirms real offerings in the admin panel.]
-            </em>
-          </p>
-        )
-      }
+      <h2>How it works — three steps</h2>
+      <ol class="nv-steplist">
+        <li class="relative flex gap-4 pb-6 pl-1 last:pb-2">
+          <span
+            class="z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[color:var(--color-gold-400)] bg-white font-serif text-[28px] leading-none text-[color:var(--color-gold-600)]"
+            aria-hidden="true">1</span
+          >
+          <span class="pt-1.5 text-[15px] leading-relaxed text-[color:var(--color-ink-800)]">
+            <strong>Get your exact number.</strong> Free inspection, itemized written estimate — same
+            day you call. This is the amount you'd finance.
+          </span>
+        </li>
+        <li class="relative flex gap-4 pb-6 pl-1 last:pb-2">
+          <span
+            class="z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[color:var(--color-gold-400)] bg-white font-serif text-[28px] leading-none text-[color:var(--color-gold-600)]"
+            aria-hidden="true">2</span
+          >
+          <span class="pt-1.5 text-[15px] leading-relaxed text-[color:var(--color-ink-800)]">
+            <strong>Check your options.</strong> Start with a soft-check tool (no effect on your credit
+            score), and compare two things: the monthly payment <em>and</em> the total you'll repay over
+            the life of the loan.
+          </span>
+        </li>
+        <li class="relative flex gap-4 pb-6 pl-1 last:pb-2">
+          <span
+            class="z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[color:var(--color-gold-400)] bg-white font-serif text-[28px] leading-none text-[color:var(--color-gold-600)]"
+            aria-hidden="true">3</span
+          >
+          <span class="pt-1.5 text-[15px] leading-relaxed text-[color:var(--color-ink-800)]">
+            <strong>Pick, sign, schedule.</strong> Once your financing is approved, we put the install
+            on the calendar — most roofs finish in a day.
+          </span>
+        </li>
+      </ol>
+
+      <h2>Two ways to borrow, in plain English</h2>
+      <ul class="nv-cardlist grid gap-4 sm:grid-cols-2">
+        <li
+          class="rounded-[var(--radius-card)] border border-[color:var(--color-navy-100)] bg-white p-5"
+        >
+          <strong class="block text-base text-[color:var(--color-navy-900)]"
+            >Without your home's equity</strong
+          >
+          <span class="mt-1.5 block text-sm leading-relaxed text-[color:var(--color-ink-700)]">
+            A personal / home-improvement loan. Approval rests on your credit, not your house — no
+            lien, no appraisal, and funding is usually fast. For a typical roof, this is the simpler
+            path. Acorn and LightStream below are this kind.
+          </span>
+        </li>
+        <li
+          class="rounded-[var(--radius-card)] border border-[color:var(--color-navy-100)] bg-white p-5"
+        >
+          <strong class="block text-base text-[color:var(--color-navy-900)]"
+            >With your home's equity</strong
+          >
+          <span class="mt-1.5 block text-sm leading-relaxed text-[color:var(--color-ink-700)]">
+            A home-equity loan or HELOC, secured by the house. Rates are usually lower and terms
+            longer — which is what shrinks the monthly payment — but there's a lien and more closing
+            steps, and Texas caps everything borrowed against your home at 80% of its value. Frost,
+            TDECU, and Figure below are this kind.
+          </span>
+        </li>
+      </ul>
 
       <h2>If insurance is paying</h2>
       <p>
-        Storm-damage replacements often run through your homeowner's policy. Two things Texas law
-        makes non-negotiable: you pay your own deductible (contractors offering to absorb it are
-        breaking the law), and replacement-cost policies typically pay in two parts — the
-        depreciated value first, the remainder after proof of completed repairs. Our
+        Storm-damage replacements often run through your homeowner's policy — and then the loan
+        question shrinks to your deductible and any upgrades. Two things Texas law makes
+        non-negotiable: you pay your own deductible (contractors offering to absorb it are breaking
+        the law), and replacement-cost policies typically pay in two parts — the depreciated value
+        first, the remainder after proof of completed repairs. Our
         <a href="/services/insurance-claims"> insurance claims guide</a> walks the whole process.
       </p>
     </article>
@@ -76,4 +253,56 @@ const hasRealFinancing = BRAND.financing.trim().length > 0;
       <LeadForm source="financing-page" />
     </aside>
   </section>
+
+  {/* Lender options — order and selection by the owner; facts per Sheet 7. */}
+  <section
+    class="border-y border-[color:var(--color-navy-100)] bg-[color:var(--color-surface-ivory)]"
+  >
+    <div class="mx-auto max-w-6xl px-4 py-16 md:py-20">
+      <h2 class="text-3xl md:text-4xl">Five good places to start</h2>
+      <div class="rule-gold mt-5" aria-hidden="true"></div>
+      <p class="mt-6 max-w-2xl leading-relaxed text-[color:var(--color-ink-700)]">
+        Listed in the order most homeowners should try them: compare broadly first, then look at the
+        option that matches your credit and your home's equity.
+      </p>
+      <ul class="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        {
+          LENDERS.map((l) => (
+            <li class="flex flex-col rounded-[var(--radius-card)] border border-[color:var(--color-navy-100)] bg-white p-6">
+              <span class="text-xs font-semibold tracking-[0.14em] text-[color:var(--color-gold-600)] uppercase">
+                {l.badge}
+              </span>
+              <h3 class="mt-2 text-xl text-[color:var(--color-navy-900)]">{l.name}</h3>
+              <p class="mt-2.5 text-sm leading-relaxed text-[color:var(--color-ink-700)]">
+                {l.blurb}
+              </p>
+              <p class="mt-3 text-sm leading-relaxed text-[color:var(--color-ink-700)]">
+                <strong class="text-[color:var(--color-navy-900)]">Good to know:</strong>{" "}
+                {l.goodToKnow}
+              </p>
+              <a
+                href={l.href}
+                target="_blank"
+                rel="nofollow noopener"
+                class="mt-auto inline-flex items-center gap-1.5 pt-5 text-sm font-semibold text-[color:var(--color-gold-600)] hover:text-[color:var(--color-navy-900)]"
+              >
+                {l.cta}
+                <span aria-hidden="true">↗</span>
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+      <p class="mt-8 max-w-3xl text-xs leading-relaxed text-[color:var(--color-ink-500)]">
+        Northvale Roofing is a roofing contractor — not a lender, loan broker, or financial advisor
+        — and lists these companies as a convenience, not an endorsement. Every amount, term, and
+        feature above is set by the lender, is subject to credit approval, and can change; confirm
+        current terms on the lender's site before applying. Details verified August 2026.
+      </p>
+    </div>
+  </section>
+
+  <div id="faq">
+    <Faq items={FAQS} heading="Financing questions, answered" accordion={true} />
+  </div>
 </BaseLayout>

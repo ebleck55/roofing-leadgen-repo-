@@ -949,3 +949,82 @@ allowed "once owner supplies numbers"). Each entry notes the date supplied.
 4. ~~Owner portrait provenance~~ RESOLVED 2026-07-31: the owner confirmed in
    session that the headshot is a real photo of him (possibly AI-retouched /
    background-edited). Cleared to publish captioned "Greg Labbe, owner".
+
+## Sheet 7 — Roof financing options (owner-selected lenders, verified 2026-08-10)
+
+The owner (Greg, session 2026-08-10) selected five financing options for a
+customer-facing /financing resource page. Direct fetches of lender sites are
+blocked by this environment's egress proxy, so each claim below was verified
+via search-result snippets of the lenders' own pages plus current (2026)
+third-party reviews. Re-verify before any future edit — lender terms change
+often. NOTHING from the UNVERIFIED list goes on the site.
+
+### Acorn Finance — acornfinance.com/borrowers/
+
+- Marketplace/platform, not a direct lender: one form, personalized offers
+  from a network of lenders. — SOURCE: acornfinance.com (via search snippets,
+  2026-08-10).
+- Offers up to **$100,000**; repayment terms up to **20 years (240 months)**
+  for qualifying borrowers. — SOURCE: acornfinance.com, same access.
+- Checking offers uses a **soft credit pull — no impact on credit score**;
+  a hard inquiry only occurs on a full application with a chosen lender. —
+  SOURCE: acornfinance.com, same access.
+
+### LightStream — lightstream.com/home-improvement-loan
+
+- Division of **Truist**. Unsecured home-improvement loan: **no home equity,
+  no appraisal, no lien**; fixed rates. — SOURCE: lightstream.com (via search
+  snippets, 2026-08-10).
+- Amounts **$5,000–$100,000**; terms up to **20 years** available on larger
+  home-improvement loans. — SOURCE: lightstream.com + NerdWallet 2026 review.
+- **Good-to-excellent credit** profiles only. **No soft-pull prequalification**
+  — applying is a full (hard-inquiry) application. — SOURCE: NerdWallet /
+  Credible 2026 reviews.
+
+### Frost Bank — frostbank.com/personal/banking/loan-products/improvement
+
+- Texas bank; home-improvement loan **secured by the home**; terms of **180 or
+  240 months (15 / 20 years)**. — SOURCE: frostbank.com (via search snippets,
+  2026-08-10).
+- **0.25% rate discount** with automatic payments from a Frost checking or
+  savings account; subject property must be **in Texas**. — SOURCE: same.
+
+### TDECU — tdecu.org/mortgage/home-equity-loan/
+
+- Texas credit union; **fixed-rate home-equity loan with a 15-year option**;
+  **primary residence in Texas** only. — SOURCE: tdecu.org (via search
+  snippets, 2026-08-10).
+
+### Figure — figure.com/home-equity-line/
+
+- Online **HELOC**; repayment terms **10, 15, 20, or 30 years**; **fixed
+  rate**; **100% of the line is drawn at origination** (re-draws available as
+  principal is repaid during the draw period). — SOURCE: CNBC Select,
+  NerdWallet, LendEDU 2026 reviews (2026-08-10).
+- **Texas minimum line: $35,000** ($15,000 in most other states) — why this
+  option suits larger projects. — SOURCE: same reviews.
+
+### Texas home-equity law (context for the page)
+
+- Texas Constitution art. XVI, **§50(a)(6)(B)**: total debt secured against a
+  homestead may not exceed **80% of its fair market value**; home-equity
+  loans are limited to the **primary residence**. — SOURCE: Texas
+  Constitution; restated on tdecu.org home-equity page (2026-08-10).
+
+### Sheet 7 — UNVERIFIED / conflicting (do NOT publish)
+
+1. Acorn "30+ lenders" network count and "rates from 6.99%" — snippets only;
+   no APR figures go on the site anyway.
+2. Frost home-improvement loan min/max amounts — conflicting secondary data
+   ($2,000–$50,000 vs. the owner's $2,000–$100,000 note). Terms (15/20 yr)
+   verified; amounts NOT. Site copy omits Frost amounts.
+3. TDECU minimum loan amount — a $50,000 minimum appears on TDECU's
+   "Streamline" (no-appraisal) home-equity product; the standard product's
+   minimum is unconfirmed. Site copy omits TDECU amounts. FLAGGED to owner:
+   if the $50k minimum applies broadly, TDECU is a poor fit for a
+   typical-size roof loan.
+4. Any lender APR, fee schedule, or approval-speed claim.
+5. Whether Northvale has (or will have) referral/affiliate arrangements with
+   any listed company — if it ever does, FTC disclosure is REQUIRED on the
+   page. Current page copy states the list is "a convenience, not an
+   endorsement" and claims no compensation either way.
