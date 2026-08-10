@@ -1,74 +1,250 @@
 ---
 import BaseLayout from "@layouts/BaseLayout.astro";
 import Breadcrumbs from "@components/Breadcrumbs.astro";
+import CTAButton from "@components/CTAButton.astro";
+import PhoneCTAButton from "@components/PhoneCTAButton.astro";
 import LeadForm from "@components/LeadForm.astro";
-import { BRAND } from "~/lib/brand";
+import TrustBar from "@components/TrustBar.astro";
+import Faq from "@components/Faq.astro";
+import { faqPageJsonLd } from "~/lib/seo";
 
-// Quality gate: this page stays noindex until the owner supplies real financing
-// terms (provider, plans) in business-info.json. NEVER invent offers/APRs.
-const hasRealFinancing = BRAND.financing.trim().length > 0;
+/**
+ * Customer-facing financing guide. Lender list and ranking supplied by the
+ * owner (2026-08-10); every lender fact verified + sourced in
+ * docs/research-facts.md Sheet 7 — amounts/terms that could NOT be verified
+ * are deliberately omitted. NEVER add an APR, fee, or approval-speed claim.
+ * Northvale is not a lender; the disclaimer below the cards is load-bearing.
+ *
+ * The "what matters most" picker is CSS-only (radios + :has()) so every word
+ * stays in the server-rendered HTML: picking a pill highlights matching
+ * cards and dims the rest — nothing is hidden from crawlers or no-JS users,
+ * and browsers without :has() simply show all five cards equally.
+ */
+
+interface Lender {
+  name: string;
+  badge: string;
+  /** One-line fit summary shown under the name — the "is this me?" answer. */
+  bestIf: string;
+  blurb: string;
+  goodToKnow: string;
+  href: string;
+  cta: string;
+  /** Picker keys this option matches (see FITS). Space-separated in DOM. */
+  fit: string[];
+}
+
+const LENDERS: Lender[] = [
+  {
+    name: "Acorn Finance",
+    badge: "Start here",
+    bestIf: "you want to compare real offers before deciding anything",
+    blurb:
+      "One short form, many offers. Acorn is a comparison marketplace: it shows you personalized offers from its network of lenders — up to $100,000, with terms up to 20 years for qualifying borrowers — so you can see your real options side by side.",
+    goodToKnow:
+      "Checking your offers uses a soft credit pull, so your score isn't affected until you actually apply with a lender you picked.",
+    href: "https://www.acornfinance.com/borrowers/",
+    cta: "Compare offers",
+    fit: ["explore", "simple"],
+  },
+  {
+    name: "LightStream",
+    badge: "Good–excellent credit",
+    bestIf: "your credit is strong and you want your home kept out of it",
+    blurb:
+      "A straightforward fixed-rate loan from LightStream (part of Truist) that never touches your house: no equity needed, no appraisal, no lien. Loans run $5,000–$100,000, with terms up to 20 years on larger home-improvement loans.",
+    goodToKnow:
+      "There's no preview step — applying is a full credit application — so LightStream fits best when your credit is strong and you're ready to move.",
+    href: "https://www.lightstream.com/home-improvement-loan",
+    cta: "Check options",
+    fit: ["simple"],
+  },
+  {
+    name: "Frost Bank",
+    badge: "Texas bank",
+    bestIf: "you want a long 15–20-year runway from a Texas institution",
+    blurb:
+      "A Texas institution offering home-improvement loans secured by your home, with 15- and 20-year terms — the long runway that keeps the monthly payment low.",
+    goodToKnow:
+      "Frost discounts the rate for automatic payments from a Frost checking or savings account, and the property has to be in Texas.",
+    href: "https://www.frostbank.com/personal/banking/loan-products/improvement",
+    cta: "Explore Frost",
+    fit: ["monthly"],
+  },
+  {
+    name: "TDECU",
+    badge: "Texas credit union",
+    bestIf: "you prefer a credit union and have equity in your home",
+    blurb:
+      "A Houston-area credit union offering fixed-rate home-equity loans — including a 15-year option — on Texas primary residences.",
+    goodToKnow:
+      "Like every Texas home-equity product, total borrowing against your home is capped at 80% of its value. That's the state constitution, not lender policy.",
+    href: "https://www.tdecu.org/mortgage/home-equity-loan/",
+    cta: "Explore TDECU",
+    fit: ["monthly"],
+  },
+  {
+    name: "Figure",
+    badge: "Larger projects",
+    bestIf: "your project is $35,000 or more and you have solid equity",
+    blurb:
+      "An online home-equity line (HELOC) with 10-, 15-, 20-, or 30-year terms and a mostly-online process. In Texas the minimum line is $35,000 — so Figure fits bigger roofs, or a roof plus other projects at once.",
+    goodToKnow:
+      "You draw the full amount at a fixed rate when the line opens, and can draw again as you pay the balance down.",
+    href: "https://www.figure.com/home-equity-line/",
+    cta: "Explore Figure",
+    fit: ["monthly", "big"],
+  },
+];
+
+/** Picker pills. Keys map to Lender.fit; "all" resets. Claims must stay true. */
+const FITS = [
+  { key: "all", label: "Show me everything" },
+  { key: "explore", label: "Don't touch my credit yet" },
+  { key: "simple", label: "Simple — no home equity" },
+  { key: "monthly", label: "Smallest monthly payment" },
+  { key: "big", label: "$35K+ project" },
+];
+
+const FAQS = [
+  {
+    q: "Does checking financing offers hurt my credit score?",
+    a: "Prequalification — the “see your offers” step marketplaces like Acorn start with — uses a soft inquiry, which doesn't affect your score. A full application triggers a hard inquiry, which can trim a few points temporarily. The practical rule: compare with soft-check tools first, then submit a full application only where you actually intend to borrow.",
+  },
+  {
+    q: "Home-improvement loan vs. home-equity loan — which fits a roof?",
+    a: "A home-improvement (personal) loan is unsecured: approval rests on your credit, there's no lien on your home, and funding is fast — usually the simplest fit for a typical roof. A home-equity loan or HELOC is secured by the house, which usually means a lower rate and a longer term — a smaller monthly payment — but adds a lien, closing steps, and, in Texas, the constitutional cap of 80% of your home's value on everything borrowed against it.",
+  },
+  {
+    q: "Why does Texas treat home-equity loans differently?",
+    a: "The Texas Constitution gives homesteads unusual protection: everything borrowed against your primary residence can't exceed 80% of its market value, and home-equity loans only work on the home you live in. It's why Texas lenders like Frost and TDECU spell out rules you won't see in other states — and why a home with little equity may be better served by an unsecured loan.",
+  },
+  {
+    q: "Insurance is covering my roof — do I still need financing?",
+    a: "Often only for your deductible and any upgrades you choose. Texas law requires you to pay your own deductible — a contractor offering to “eat it” is breaking the law — and your insurer can require proof you paid it. Financing that out-of-pocket amount yourself is completely legal, and a small personal loan is a common way to do it.",
+  },
+  {
+    q: "Does Northvale offer financing directly?",
+    a: "We're roofers, not a lender — the loan is between you and the lender you choose. What we contribute is the part that protects you: an exact, itemized price in writing before you apply, so you finance the real number instead of an estimate that grows.",
+  },
+];
+
+const seo = {
+  title: "Roof Financing Options — Houston & Montgomery County",
+  description:
+    "How to finance a roof in Texas, in plain English: compare-offer marketplaces, unsecured home-improvement loans, and Texas home-equity options — plus what soft credit checks and the 80% rule mean for you.",
+  pathname: "/financing",
+  jsonLd: [faqPageJsonLd(FAQS)],
+};
 ---
 
-<BaseLayout
-  seo={{
-    title: "Roof Financing Options",
-    description:
-      "Payment and financing options for roof replacement and repair with Northvale Roofing.",
-    pathname: "/financing",
-    noindex: !hasRealFinancing,
-  }}
->
-  {
-    !hasRealFinancing && (
-      <div class="border-b-2 border-[color:var(--color-gold-400)] bg-[color:var(--color-gold-50)] px-4 py-3 text-sm text-[color:var(--color-ink-800)]">
-        <div class="mx-auto max-w-6xl">
-          <strong>NEEDS REAL DATA — draft, not indexed.</strong> This page publishes automatically
-          once real financing terms are entered in Business Info (admin panel). Never list a
-          provider, plan, or rate that isn't confirmed.
-        </div>
+<BaseLayout seo={seo}>
+  {/* Photo header — matches the service-page visual system. Real work photo. */}
+  <section class="relative overflow-hidden bg-[color:var(--color-navy-950)]">
+    <img
+      src="/work/work-06.webp"
+      alt="Completed roof replacement on a two-story home beneath a mature oak tree"
+      class="absolute inset-0 h-full w-full object-cover object-[70%_center]"
+      loading="eager"
+      fetchpriority="high"
+      decoding="async"
+    />
+    <div class="nv-svc-scrim absolute inset-0" aria-hidden="true"></div>
+    <div class="relative mx-auto max-w-6xl px-4 py-14 md:py-20">
+      <Breadcrumbs variant="dark" items={[{ label: "Home", href: "/" }, { label: "Financing" }]} />
+      <h1 class="mt-6 max-w-3xl text-4xl text-white md:text-5xl">Paying for your roof</h1>
+      <div class="rule-gold mt-6" aria-hidden="true"></div>
+      <p class="mt-6 max-w-2xl text-lg leading-relaxed text-[color:var(--color-navy-100)]">
+        A roof is a big check on short notice. When savings shouldn't carry it alone, here are five
+        legitimate ways Houston-area homeowners finance one — ranked, explained in plain English,
+        and matched to your situation below.
+      </p>
+      <div class="mt-7 flex flex-wrap gap-3">
+        <CTAButton href="/contact" label="Get your written price" ctaId="financing-book" />
+        <PhoneCTAButton ctaId="financing-call" variant="ghost-dark" />
       </div>
-    )
-  }
-
-  <section class="page-header-band mx-auto max-w-6xl px-4 py-12 md:py-16">
-    <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Financing" }]} />
-    <h1 class="mt-6 text-4xl md:text-5xl">Paying for your roof</h1>
-    <div class="rule-gold mt-6" aria-hidden="true"></div>
-    <p class="mt-6 max-w-2xl text-lg leading-relaxed text-[color:var(--color-ink-700)]">
-      A roof is a big check on short notice. Here's how payment works with us — always in writing,
-      never a surprise.
-    </p>
+      <ul class="mt-9 flex flex-wrap gap-x-10 gap-y-4 border-t border-white/15 pt-6">
+        <li class="flex items-baseline gap-2.5">
+          <span class="font-serif text-[28px] leading-none text-[color:var(--color-gold-300)]"
+            >In writing</span
+          >
+          <span class="max-w-52 text-[13px] leading-snug text-[color:var(--color-navy-100)]/90"
+            >your exact price before you borrow a dollar</span
+          >
+        </li>
+        <li class="flex items-baseline gap-2.5">
+          <span class="font-serif text-[28px] leading-none text-[color:var(--color-gold-300)]"
+            >5 options</span
+          >
+          <span class="max-w-52 text-[13px] leading-snug text-[color:var(--color-navy-100)]/90"
+            >from soft-check marketplaces to Texas home equity</span
+          >
+        </li>
+        <li class="flex items-baseline gap-2.5">
+          <span class="font-serif text-[28px] leading-none text-[color:var(--color-gold-300)]"
+            >5–30 yrs</span
+          >
+          <span class="max-w-52 text-[13px] leading-snug text-[color:var(--color-navy-100)]/90"
+            >loan terms available across these options</span
+          >
+        </li>
+      </ul>
+    </div>
   </section>
 
-  <section class="mx-auto grid max-w-6xl gap-10 px-4 py-12 md:grid-cols-[1fr_400px]">
+  <TrustBar />
+
+  <section class="mx-auto grid max-w-6xl gap-10 px-4 py-10 md:grid-cols-[1fr_400px]">
     <article class="prose-northvale">
-      <h2>Every price in writing, before you commit</h2>
+      <h2>Every price in writing, before you borrow</h2>
       <p>
-        The estimate you sign is itemized — shingle line, underlayment, decking allowance, warranty
-        — and it's the price you pay. Change orders happen only for genuinely hidden conditions,
-        priced from the rates already stated in your estimate.
+        Financing only works when the number is real. The estimate we leave is itemized — shingle
+        line, underlayment, decking allowance, warranty — and it's the price you pay. That's the
+        amount you take to a lender, not a guess that grows after the loan closes.
       </p>
 
-      <h2>Financing</h2>
-      {
-        hasRealFinancing ? (
-          <p>{BRAND.financing}</p>
-        ) : (
-          <p>
-            <em>
-              [NEEDS DATA: financing provider and plan terms — this section publishes once the owner
-              confirms real offerings in the admin panel.]
-            </em>
-          </p>
-        )
-      }
+      <h2>How it works — three steps</h2>
+      <ol class="nv-steplist">
+        <li class="relative flex gap-4 pb-6 pl-1 last:pb-2">
+          <span
+            class="z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[color:var(--color-gold-400)] bg-white font-serif text-[28px] leading-none text-[color:var(--color-gold-600)]"
+            aria-hidden="true">1</span
+          >
+          <span class="pt-1.5 text-[15px] leading-relaxed text-[color:var(--color-ink-800)]">
+            <strong>Get your exact number.</strong> Free inspection, itemized written estimate — same
+            day you call. This is the amount you'd finance.
+          </span>
+        </li>
+        <li class="relative flex gap-4 pb-6 pl-1 last:pb-2">
+          <span
+            class="z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[color:var(--color-gold-400)] bg-white font-serif text-[28px] leading-none text-[color:var(--color-gold-600)]"
+            aria-hidden="true">2</span
+          >
+          <span class="pt-1.5 text-[15px] leading-relaxed text-[color:var(--color-ink-800)]">
+            <strong>Check your options.</strong> Start with a soft-check tool (no effect on your credit
+            score), and compare two things: the monthly payment <em>and</em> the total you'll repay over
+            the life of the loan.
+          </span>
+        </li>
+        <li class="relative flex gap-4 pb-6 pl-1 last:pb-2">
+          <span
+            class="z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[color:var(--color-gold-400)] bg-white font-serif text-[28px] leading-none text-[color:var(--color-gold-600)]"
+            aria-hidden="true">3</span
+          >
+          <span class="pt-1.5 text-[15px] leading-relaxed text-[color:var(--color-ink-800)]">
+            <strong>Pick, sign, schedule.</strong> Once your financing is approved, we put the install
+            on the calendar — most roofs finish in a day.
+          </span>
+        </li>
+      </ol>
 
       <h2>If insurance is paying</h2>
       <p>
-        Storm-damage replacements often run through your homeowner's policy. Two things Texas law
-        makes non-negotiable: you pay your own deductible (contractors offering to absorb it are
-        breaking the law), and replacement-cost policies typically pay in two parts — the
-        depreciated value first, the remainder after proof of completed repairs. Our
+        Storm-damage replacements often run through your homeowner's policy — and then the loan
+        question shrinks to your deductible and any upgrades. Two things Texas law makes
+        non-negotiable: you pay your own deductible (contractors offering to absorb it are breaking
+        the law), and replacement-cost policies typically pay in two parts — the depreciated value
+        first, the remainder after proof of completed repairs. Our
         <a href="/services/insurance-claims"> insurance claims guide</a> walks the whole process.
       </p>
     </article>
@@ -76,4 +252,176 @@ const hasRealFinancing = BRAND.financing.trim().length > 0;
       <LeadForm source="financing-page" />
     </aside>
   </section>
+
+  {/* Finder — ranking and selection by the owner; facts per Sheet 7. */}
+  <section
+    class="border-y border-[color:var(--color-navy-100)] bg-[color:var(--color-surface-ivory)]"
+  >
+    <div class="mx-auto max-w-6xl px-4 py-16 md:py-20">
+      <h2 class="text-3xl md:text-4xl">Find your financing fit</h2>
+      <div class="rule-gold mt-5" aria-hidden="true"></div>
+      <p class="mt-6 max-w-2xl leading-relaxed text-[color:var(--color-ink-700)]">
+        Five options, ranked in the order most homeowners should try them — compare broadly first,
+        then match the option to your credit and your home's equity.
+      </p>
+
+      {/* CSS-only matcher: radios + :has() highlight matching ranked cards. */}
+      <div class="nv-finder mt-10">
+        {
+          FITS.map((f, i) => (
+            <input
+              type="radio"
+              name="fin-fit"
+              id={`fit-${f.key}`}
+              class="sr-only"
+              checked={i === 0}
+            />
+          ))
+        }
+
+        <fieldset class="m-0 border-0 p-0">
+          <legend class="text-lg font-semibold text-[color:var(--color-navy-900)] md:text-xl"
+            >What matters most to you?</legend
+          >
+          <p class="mt-1 text-sm text-[color:var(--color-ink-500)]">
+            Tap one — we'll point you to your match.
+          </p>
+          <div class="mt-4 flex flex-wrap gap-2.5">
+            {
+              FITS.map((f) => (
+                <label
+                  for={`fit-${f.key}`}
+                  class="cursor-pointer rounded-full border border-[color:var(--color-navy-100)] bg-white px-4 py-2 text-sm font-semibold text-[color:var(--color-navy-900)] transition-colors select-none hover:border-[color:var(--color-gold-400)]"
+                >
+                  {f.label}
+                </label>
+              ))
+            }
+          </div>
+        </fieldset>
+
+        <ol class="mt-8 space-y-5">
+          {
+            LENDERS.map((l, i) => (
+              <li
+                id={`option-${i + 1}`}
+                data-fit={l.fit.join(" ")}
+                class="nv-fin-card scroll-mt-24 rounded-[var(--radius-card)] border border-[color:var(--color-navy-100)] bg-white p-6 md:p-7"
+              >
+                <div class="grid gap-5 md:grid-cols-[auto_1fr_auto] md:items-start">
+                  <span
+                    class="flex h-12 w-12 items-center justify-center rounded-full border border-[color:var(--color-gold-400)] bg-[color:var(--color-surface-ivory)] font-serif text-[30px] leading-none text-[color:var(--color-gold-600)]"
+                    aria-hidden="true"
+                  >
+                    {i + 1}
+                  </span>
+                  <div>
+                    <div class="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+                      <h3 class="text-xl text-[color:var(--color-navy-900)]">{l.name}</h3>
+                      <span class="rounded-full bg-[color:var(--color-navy-950)] px-3 py-1 text-[11px] font-semibold tracking-[0.12em] text-white uppercase">
+                        {l.badge}
+                      </span>
+                      <span class="nv-match items-center gap-1 rounded-full bg-[color:var(--color-gold-50)] px-3 py-1 text-[11px] font-semibold tracking-[0.12em] text-[color:var(--color-gold-600)] uppercase">
+                        ✓ Your match
+                      </span>
+                    </div>
+                    <p class="mt-1.5 text-sm font-semibold text-[color:var(--color-gold-600)]">
+                      Best if: {l.bestIf}.
+                    </p>
+                    <p class="mt-2.5 max-w-2xl text-sm leading-relaxed text-[color:var(--color-ink-700)]">
+                      {l.blurb}
+                    </p>
+                    <p class="mt-2.5 max-w-2xl text-sm leading-relaxed text-[color:var(--color-ink-700)]">
+                      <strong class="text-[color:var(--color-navy-900)]">Good to know:</strong>{" "}
+                      {l.goodToKnow}
+                    </p>
+                  </div>
+                  <a
+                    href={l.href}
+                    target="_blank"
+                    rel="nofollow noopener"
+                    class="inline-flex items-center justify-center gap-1.5 self-start rounded-full border border-[color:var(--color-navy-900)] px-5 py-2.5 text-sm font-semibold whitespace-nowrap text-[color:var(--color-navy-900)] transition-colors hover:bg-[color:var(--color-navy-900)] hover:text-white md:mt-1"
+                  >
+                    {l.cta}
+                    <span aria-hidden="true">↗</span>
+                  </a>
+                </div>
+              </li>
+            ))
+          }
+        </ol>
+      </div>
+
+      <p class="mt-8 max-w-3xl text-xs leading-relaxed text-[color:var(--color-ink-500)]">
+        Northvale Roofing is a roofing contractor — not a lender, loan broker, or financial advisor
+        — and lists these companies as a convenience, not an endorsement. Every amount, term, and
+        feature above is set by the lender, is subject to credit approval, and can change; confirm
+        current terms on the lender's site before applying. Details verified August 2026.
+      </p>
+    </div>
+  </section>
+
+  <div id="faq">
+    <Faq items={FAQS} heading="Financing questions, answered" accordion={true} />
+  </div>
 </BaseLayout>
+
+<style is:global>
+  /* Financing finder — CSS-only matching (page-specific, namespaced .nv-finder).
+     Browsers without :has() show all cards equally; content never hides. */
+  .nv-finder .nv-fin-card {
+    transition:
+      opacity 0.25s ease,
+      border-color 0.25s ease,
+      box-shadow 0.25s ease;
+  }
+  .nv-finder .nv-match {
+    display: none;
+  }
+  /* Dim non-matching cards… */
+  .nv-finder:has(#fit-explore:checked) .nv-fin-card:not([data-fit~="explore"]),
+  .nv-finder:has(#fit-simple:checked) .nv-fin-card:not([data-fit~="simple"]),
+  .nv-finder:has(#fit-monthly:checked) .nv-fin-card:not([data-fit~="monthly"]),
+  .nv-finder:has(#fit-big:checked) .nv-fin-card:not([data-fit~="big"]) {
+    opacity: 0.35;
+  }
+  /* …lift matching ones… */
+  .nv-finder:has(#fit-explore:checked) .nv-fin-card[data-fit~="explore"],
+  .nv-finder:has(#fit-simple:checked) .nv-fin-card[data-fit~="simple"],
+  .nv-finder:has(#fit-monthly:checked) .nv-fin-card[data-fit~="monthly"],
+  .nv-finder:has(#fit-big:checked) .nv-fin-card[data-fit~="big"] {
+    border-color: var(--color-gold-400);
+    box-shadow: 0 0 0 1px var(--color-gold-400);
+  }
+  /* …and reveal their "Your match" chip. */
+  .nv-finder:has(#fit-explore:checked) .nv-fin-card[data-fit~="explore"] .nv-match,
+  .nv-finder:has(#fit-simple:checked) .nv-fin-card[data-fit~="simple"] .nv-match,
+  .nv-finder:has(#fit-monthly:checked) .nv-fin-card[data-fit~="monthly"] .nv-match,
+  .nv-finder:has(#fit-big:checked) .nv-fin-card[data-fit~="big"] .nv-match {
+    display: inline-flex;
+  }
+  /* Selected pill. */
+  .nv-finder:has(#fit-all:checked) label[for="fit-all"],
+  .nv-finder:has(#fit-explore:checked) label[for="fit-explore"],
+  .nv-finder:has(#fit-simple:checked) label[for="fit-simple"],
+  .nv-finder:has(#fit-monthly:checked) label[for="fit-monthly"],
+  .nv-finder:has(#fit-big:checked) label[for="fit-big"] {
+    background: var(--color-navy-950);
+    border-color: var(--color-navy-950);
+    color: #fff;
+  }
+  /* Keyboard focus on the (visually hidden) radios lights the pill. */
+  .nv-finder:has(#fit-all:focus-visible) label[for="fit-all"],
+  .nv-finder:has(#fit-explore:focus-visible) label[for="fit-explore"],
+  .nv-finder:has(#fit-simple:focus-visible) label[for="fit-simple"],
+  .nv-finder:has(#fit-monthly:focus-visible) label[for="fit-monthly"],
+  .nv-finder:has(#fit-big:focus-visible) label[for="fit-big"] {
+    outline: 2px solid var(--color-gold-600);
+    outline-offset: 2px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .nv-finder .nv-fin-card {
+      transition: none;
+    }
+  }
+</style>
