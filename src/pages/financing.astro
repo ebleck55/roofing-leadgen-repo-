@@ -9,73 +9,101 @@ import Faq from "@components/Faq.astro";
 import { faqPageJsonLd } from "~/lib/seo";
 
 /**
- * Customer-facing financing guide. Lender list and order supplied by the
+ * Customer-facing financing guide. Lender list and ranking supplied by the
  * owner (2026-08-10); every lender fact verified + sourced in
  * docs/research-facts.md Sheet 7 — amounts/terms that could NOT be verified
  * are deliberately omitted. NEVER add an APR, fee, or approval-speed claim.
  * Northvale is not a lender; the disclaimer below the cards is load-bearing.
+ *
+ * The "what matters most" picker is CSS-only (radios + :has()) so every word
+ * stays in the server-rendered HTML: picking a pill highlights matching
+ * cards and dims the rest — nothing is hidden from crawlers or no-JS users,
+ * and browsers without :has() simply show all five cards equally.
  */
 
 interface Lender {
   name: string;
   badge: string;
+  /** One-line fit summary shown under the name — the "is this me?" answer. */
+  bestIf: string;
   blurb: string;
   goodToKnow: string;
   href: string;
   cta: string;
+  /** Picker keys this option matches (see FITS). Space-separated in DOM. */
+  fit: string[];
 }
 
 const LENDERS: Lender[] = [
   {
     name: "Acorn Finance",
     badge: "Start here",
+    bestIf: "you want to compare real offers before deciding anything",
     blurb:
       "One short form, many offers. Acorn is a comparison marketplace: it shows you personalized offers from its network of lenders — up to $100,000, with terms up to 20 years for qualifying borrowers — so you can see your real options side by side.",
     goodToKnow:
       "Checking your offers uses a soft credit pull, so your score isn't affected until you actually apply with a lender you picked.",
     href: "https://www.acornfinance.com/borrowers/",
     cta: "Compare offers",
+    fit: ["explore", "simple"],
   },
   {
     name: "LightStream",
     badge: "Good–excellent credit",
+    bestIf: "your credit is strong and you want your home kept out of it",
     blurb:
       "A straightforward fixed-rate loan from LightStream (part of Truist) that never touches your house: no equity needed, no appraisal, no lien. Loans run $5,000–$100,000, with terms up to 20 years on larger home-improvement loans.",
     goodToKnow:
       "There's no preview step — applying is a full credit application — so LightStream fits best when your credit is strong and you're ready to move.",
     href: "https://www.lightstream.com/home-improvement-loan",
     cta: "Check options",
+    fit: ["simple"],
   },
   {
     name: "Frost Bank",
     badge: "Texas bank",
+    bestIf: "you want a long 15–20-year runway from a Texas institution",
     blurb:
       "A Texas institution offering home-improvement loans secured by your home, with 15- and 20-year terms — the long runway that keeps the monthly payment low.",
     goodToKnow:
       "Frost discounts the rate for automatic payments from a Frost checking or savings account, and the property has to be in Texas.",
     href: "https://www.frostbank.com/personal/banking/loan-products/improvement",
     cta: "Explore Frost",
+    fit: ["monthly"],
   },
   {
     name: "TDECU",
     badge: "Texas credit union",
+    bestIf: "you prefer a credit union and have equity in your home",
     blurb:
       "A Houston-area credit union offering fixed-rate home-equity loans — including a 15-year option — on Texas primary residences.",
     goodToKnow:
       "Like every Texas home-equity product, total borrowing against your home is capped at 80% of its value. That's the state constitution, not lender policy.",
     href: "https://www.tdecu.org/mortgage/home-equity-loan/",
     cta: "Explore TDECU",
+    fit: ["monthly"],
   },
   {
     name: "Figure",
     badge: "Larger projects",
+    bestIf: "your project is $35,000 or more and you have solid equity",
     blurb:
       "An online home-equity line (HELOC) with 10-, 15-, 20-, or 30-year terms and a mostly-online process. In Texas the minimum line is $35,000 — so Figure fits bigger roofs, or a roof plus other projects at once.",
     goodToKnow:
       "You draw the full amount at a fixed rate when the line opens, and can draw again as you pay the balance down.",
     href: "https://www.figure.com/home-equity-line/",
     cta: "Explore Figure",
+    fit: ["monthly", "big"],
   },
+];
+
+/** Picker pills. Keys map to Lender.fit; "all" resets. Claims must stay true. */
+const FITS = [
+  { key: "all", label: "Show me everything" },
+  { key: "explore", label: "Don't touch my credit yet" },
+  { key: "simple", label: "Simple — no home equity" },
+  { key: "monthly", label: "Smallest monthly payment" },
+  { key: "big", label: "$35K+ project" },
 ];
 
 const FAQS = [
@@ -128,8 +156,8 @@ const seo = {
       <div class="rule-gold mt-6" aria-hidden="true"></div>
       <p class="mt-6 max-w-2xl text-lg leading-relaxed text-[color:var(--color-navy-100)]">
         A roof is a big check on short notice. When savings shouldn't carry it alone, here are five
-        legitimate ways Houston-area homeowners finance one — from quick unsecured loans to Texas
-        home-equity products — explained in plain English.
+        legitimate ways Houston-area homeowners finance one — ranked, explained in plain English,
+        and matched to your situation below.
       </p>
       <div class="mt-7 flex flex-wrap gap-3">
         <CTAButton href="/contact" label="Get your written price" ctaId="financing-book" />
@@ -210,35 +238,6 @@ const seo = {
         </li>
       </ol>
 
-      <h2>Two ways to borrow, in plain English</h2>
-      <ul class="nv-cardlist grid gap-4 sm:grid-cols-2">
-        <li
-          class="rounded-[var(--radius-card)] border border-[color:var(--color-navy-100)] bg-white p-5"
-        >
-          <strong class="block text-base text-[color:var(--color-navy-900)]"
-            >Without your home's equity</strong
-          >
-          <span class="mt-1.5 block text-sm leading-relaxed text-[color:var(--color-ink-700)]">
-            A personal / home-improvement loan. Approval rests on your credit, not your house — no
-            lien, no appraisal, and funding is usually fast. For a typical roof, this is the simpler
-            path. Acorn and LightStream below are this kind.
-          </span>
-        </li>
-        <li
-          class="rounded-[var(--radius-card)] border border-[color:var(--color-navy-100)] bg-white p-5"
-        >
-          <strong class="block text-base text-[color:var(--color-navy-900)]"
-            >With your home's equity</strong
-          >
-          <span class="mt-1.5 block text-sm leading-relaxed text-[color:var(--color-ink-700)]">
-            A home-equity loan or HELOC, secured by the house. Rates are usually lower and terms
-            longer — which is what shrinks the monthly payment — but there's a lien and more closing
-            steps, and Texas caps everything borrowed against your home at 80% of its value. Frost,
-            TDECU, and Figure below are this kind.
-          </span>
-        </li>
-      </ul>
-
       <h2>If insurance is paying</h2>
       <p>
         Storm-damage replacements often run through your homeowner's policy — and then the loan
@@ -254,45 +253,169 @@ const seo = {
     </aside>
   </section>
 
-  {/* Lender options — order and selection by the owner; facts per Sheet 7. */}
+  {/* Finder — ranking and selection by the owner; facts per Sheet 7. */}
   <section
     class="border-y border-[color:var(--color-navy-100)] bg-[color:var(--color-surface-ivory)]"
   >
     <div class="mx-auto max-w-6xl px-4 py-16 md:py-20">
-      <h2 class="text-3xl md:text-4xl">Five good places to start</h2>
+      <h2 class="text-3xl md:text-4xl">Find your financing fit</h2>
       <div class="rule-gold mt-5" aria-hidden="true"></div>
       <p class="mt-6 max-w-2xl leading-relaxed text-[color:var(--color-ink-700)]">
-        Listed in the order most homeowners should try them: compare broadly first, then look at the
-        option that matches your credit and your home's equity.
+        Two paths, five options, ranked in the order most homeowners should try them. Start with the
+        question that decides everything:
       </p>
-      <ul class="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+
+      {/* The fork: the one decision that splits the five options. */}
+      <div class="mt-10 grid gap-5 md:grid-cols-2">
+        <div
+          class="relative rounded-[var(--radius-card)] border border-[color:var(--color-navy-100)] bg-white p-6 md:p-7"
+        >
+          <span
+            class="text-xs font-semibold tracking-[0.14em] text-[color:var(--color-gold-600)] uppercase"
+            >Path A — most roofs</span
+          >
+          <h3 class="mt-2 text-xl text-[color:var(--color-navy-900)]">Keep your home out of it</h3>
+          <p class="mt-2.5 text-sm leading-relaxed text-[color:var(--color-ink-700)]">
+            A personal / home-improvement loan. Approval rests on your credit, not your house — no
+            lien, no appraisal, and funding is usually fast. The simpler path for a typical roof.
+          </p>
+          <p class="mt-4 flex flex-wrap items-center gap-2 text-sm font-semibold">
+            <span class="text-[color:var(--color-ink-500)]">Your options:</span>
+            <a
+              href="#option-1"
+              class="rounded-full border border-[color:var(--color-navy-100)] px-3 py-1 text-[color:var(--color-navy-900)] hover:border-[color:var(--color-gold-400)] hover:text-[color:var(--color-gold-600)]"
+              >#1 Acorn</a
+            >
+            <a
+              href="#option-2"
+              class="rounded-full border border-[color:var(--color-navy-100)] px-3 py-1 text-[color:var(--color-navy-900)] hover:border-[color:var(--color-gold-400)] hover:text-[color:var(--color-gold-600)]"
+              >#2 LightStream</a
+            >
+          </p>
+        </div>
+        <div
+          class="relative rounded-[var(--radius-card)] border border-[color:var(--color-navy-100)] bg-white p-6 md:p-7"
+        >
+          <span
+            class="text-xs font-semibold tracking-[0.14em] text-[color:var(--color-gold-600)] uppercase"
+            >Path B — lowest monthly payment</span
+          >
+          <h3 class="mt-2 text-xl text-[color:var(--color-navy-900)]">
+            Use your equity to shrink the payment
+          </h3>
+          <p class="mt-2.5 text-sm leading-relaxed text-[color:var(--color-ink-700)]">
+            A home-equity loan or HELOC, secured by the house. Rates are usually lower and terms
+            longer — that's what shrinks the monthly payment — but there's a lien and more closing
+            steps, and Texas caps everything borrowed against your home at 80% of its value.
+          </p>
+          <p class="mt-4 flex flex-wrap items-center gap-2 text-sm font-semibold">
+            <span class="text-[color:var(--color-ink-500)]">Your options:</span>
+            <a
+              href="#option-3"
+              class="rounded-full border border-[color:var(--color-navy-100)] px-3 py-1 text-[color:var(--color-navy-900)] hover:border-[color:var(--color-gold-400)] hover:text-[color:var(--color-gold-600)]"
+              >#3 Frost</a
+            >
+            <a
+              href="#option-4"
+              class="rounded-full border border-[color:var(--color-navy-100)] px-3 py-1 text-[color:var(--color-navy-900)] hover:border-[color:var(--color-gold-400)] hover:text-[color:var(--color-gold-600)]"
+              >#4 TDECU</a
+            >
+            <a
+              href="#option-5"
+              class="rounded-full border border-[color:var(--color-navy-100)] px-3 py-1 text-[color:var(--color-navy-900)] hover:border-[color:var(--color-gold-400)] hover:text-[color:var(--color-gold-600)]"
+              >#5 Figure</a
+            >
+          </p>
+        </div>
+      </div>
+
+      {/* CSS-only matcher: radios + :has() highlight matching ranked cards. */}
+      <div class="nv-finder mt-14">
         {
-          LENDERS.map((l) => (
-            <li class="flex flex-col rounded-[var(--radius-card)] border border-[color:var(--color-navy-100)] bg-white p-6">
-              <span class="text-xs font-semibold tracking-[0.14em] text-[color:var(--color-gold-600)] uppercase">
-                {l.badge}
-              </span>
-              <h3 class="mt-2 text-xl text-[color:var(--color-navy-900)]">{l.name}</h3>
-              <p class="mt-2.5 text-sm leading-relaxed text-[color:var(--color-ink-700)]">
-                {l.blurb}
-              </p>
-              <p class="mt-3 text-sm leading-relaxed text-[color:var(--color-ink-700)]">
-                <strong class="text-[color:var(--color-navy-900)]">Good to know:</strong>{" "}
-                {l.goodToKnow}
-              </p>
-              <a
-                href={l.href}
-                target="_blank"
-                rel="nofollow noopener"
-                class="mt-auto inline-flex items-center gap-1.5 pt-5 text-sm font-semibold text-[color:var(--color-gold-600)] hover:text-[color:var(--color-navy-900)]"
-              >
-                {l.cta}
-                <span aria-hidden="true">↗</span>
-              </a>
-            </li>
+          FITS.map((f, i) => (
+            <input
+              type="radio"
+              name="fin-fit"
+              id={`fit-${f.key}`}
+              class="sr-only"
+              checked={i === 0}
+            />
           ))
         }
-      </ul>
+
+        <fieldset class="m-0 border-0 p-0">
+          <legend class="text-lg font-semibold text-[color:var(--color-navy-900)] md:text-xl"
+            >What matters most to you?</legend
+          >
+          <p class="mt-1 text-sm text-[color:var(--color-ink-500)]">
+            Tap one — we'll point you to your match.
+          </p>
+          <div class="mt-4 flex flex-wrap gap-2.5">
+            {
+              FITS.map((f) => (
+                <label
+                  for={`fit-${f.key}`}
+                  class="cursor-pointer rounded-full border border-[color:var(--color-navy-100)] bg-white px-4 py-2 text-sm font-semibold text-[color:var(--color-navy-900)] transition-colors select-none hover:border-[color:var(--color-gold-400)]"
+                >
+                  {f.label}
+                </label>
+              ))
+            }
+          </div>
+        </fieldset>
+
+        <ol class="mt-8 space-y-5">
+          {
+            LENDERS.map((l, i) => (
+              <li
+                id={`option-${i + 1}`}
+                data-fit={l.fit.join(" ")}
+                class="nv-fin-card scroll-mt-24 rounded-[var(--radius-card)] border border-[color:var(--color-navy-100)] bg-white p-6 md:p-7"
+              >
+                <div class="grid gap-5 md:grid-cols-[auto_1fr_auto] md:items-start">
+                  <span
+                    class="flex h-12 w-12 items-center justify-center rounded-full border border-[color:var(--color-gold-400)] bg-[color:var(--color-surface-ivory)] font-serif text-[30px] leading-none text-[color:var(--color-gold-600)]"
+                    aria-hidden="true"
+                  >
+                    {i + 1}
+                  </span>
+                  <div>
+                    <div class="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+                      <h3 class="text-xl text-[color:var(--color-navy-900)]">{l.name}</h3>
+                      <span class="rounded-full bg-[color:var(--color-navy-950)] px-3 py-1 text-[11px] font-semibold tracking-[0.12em] text-white uppercase">
+                        {l.badge}
+                      </span>
+                      <span class="nv-match items-center gap-1 rounded-full bg-[color:var(--color-gold-50)] px-3 py-1 text-[11px] font-semibold tracking-[0.12em] text-[color:var(--color-gold-600)] uppercase">
+                        ✓ Your match
+                      </span>
+                    </div>
+                    <p class="mt-1.5 text-sm font-semibold text-[color:var(--color-gold-600)]">
+                      Best if: {l.bestIf}.
+                    </p>
+                    <p class="mt-2.5 max-w-2xl text-sm leading-relaxed text-[color:var(--color-ink-700)]">
+                      {l.blurb}
+                    </p>
+                    <p class="mt-2.5 max-w-2xl text-sm leading-relaxed text-[color:var(--color-ink-700)]">
+                      <strong class="text-[color:var(--color-navy-900)]">Good to know:</strong>{" "}
+                      {l.goodToKnow}
+                    </p>
+                  </div>
+                  <a
+                    href={l.href}
+                    target="_blank"
+                    rel="nofollow noopener"
+                    class="inline-flex items-center justify-center gap-1.5 self-start rounded-full border border-[color:var(--color-navy-900)] px-5 py-2.5 text-sm font-semibold whitespace-nowrap text-[color:var(--color-navy-900)] transition-colors hover:bg-[color:var(--color-navy-900)] hover:text-white md:mt-1"
+                  >
+                    {l.cta}
+                    <span aria-hidden="true">↗</span>
+                  </a>
+                </div>
+              </li>
+            ))
+          }
+        </ol>
+      </div>
+
       <p class="mt-8 max-w-3xl text-xs leading-relaxed text-[color:var(--color-ink-500)]">
         Northvale Roofing is a roofing contractor — not a lender, loan broker, or financial advisor
         — and lists these companies as a convenience, not an endorsement. Every amount, term, and
@@ -306,3 +429,63 @@ const seo = {
     <Faq items={FAQS} heading="Financing questions, answered" accordion={true} />
   </div>
 </BaseLayout>
+
+<style is:global>
+  /* Financing finder — CSS-only matching (page-specific, namespaced .nv-finder).
+     Browsers without :has() show all cards equally; content never hides. */
+  .nv-finder .nv-fin-card {
+    transition:
+      opacity 0.25s ease,
+      border-color 0.25s ease,
+      box-shadow 0.25s ease;
+  }
+  .nv-finder .nv-match {
+    display: none;
+  }
+  /* Dim non-matching cards… */
+  .nv-finder:has(#fit-explore:checked) .nv-fin-card:not([data-fit~="explore"]),
+  .nv-finder:has(#fit-simple:checked) .nv-fin-card:not([data-fit~="simple"]),
+  .nv-finder:has(#fit-monthly:checked) .nv-fin-card:not([data-fit~="monthly"]),
+  .nv-finder:has(#fit-big:checked) .nv-fin-card:not([data-fit~="big"]) {
+    opacity: 0.35;
+  }
+  /* …lift matching ones… */
+  .nv-finder:has(#fit-explore:checked) .nv-fin-card[data-fit~="explore"],
+  .nv-finder:has(#fit-simple:checked) .nv-fin-card[data-fit~="simple"],
+  .nv-finder:has(#fit-monthly:checked) .nv-fin-card[data-fit~="monthly"],
+  .nv-finder:has(#fit-big:checked) .nv-fin-card[data-fit~="big"] {
+    border-color: var(--color-gold-400);
+    box-shadow: 0 0 0 1px var(--color-gold-400);
+  }
+  /* …and reveal their "Your match" chip. */
+  .nv-finder:has(#fit-explore:checked) .nv-fin-card[data-fit~="explore"] .nv-match,
+  .nv-finder:has(#fit-simple:checked) .nv-fin-card[data-fit~="simple"] .nv-match,
+  .nv-finder:has(#fit-monthly:checked) .nv-fin-card[data-fit~="monthly"] .nv-match,
+  .nv-finder:has(#fit-big:checked) .nv-fin-card[data-fit~="big"] .nv-match {
+    display: inline-flex;
+  }
+  /* Selected pill. */
+  .nv-finder:has(#fit-all:checked) label[for="fit-all"],
+  .nv-finder:has(#fit-explore:checked) label[for="fit-explore"],
+  .nv-finder:has(#fit-simple:checked) label[for="fit-simple"],
+  .nv-finder:has(#fit-monthly:checked) label[for="fit-monthly"],
+  .nv-finder:has(#fit-big:checked) label[for="fit-big"] {
+    background: var(--color-navy-950);
+    border-color: var(--color-navy-950);
+    color: #fff;
+  }
+  /* Keyboard focus on the (visually hidden) radios lights the pill. */
+  .nv-finder:has(#fit-all:focus-visible) label[for="fit-all"],
+  .nv-finder:has(#fit-explore:focus-visible) label[for="fit-explore"],
+  .nv-finder:has(#fit-simple:focus-visible) label[for="fit-simple"],
+  .nv-finder:has(#fit-monthly:focus-visible) label[for="fit-monthly"],
+  .nv-finder:has(#fit-big:focus-visible) label[for="fit-big"] {
+    outline: 2px solid var(--color-gold-600);
+    outline-offset: 2px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .nv-finder .nv-fin-card {
+      transition: none;
+    }
+  }
+</style>
