@@ -129,6 +129,41 @@ const FAQS = [
   },
 ];
 
+/**
+ * Payment calculator — standard amortization, the exact formula lenders use.
+ * The same math renders the server-side defaults AND runs in the page script,
+ * so the numbers are correct even before (or without) JavaScript. The preset
+ * rate is a clearly-labeled EXAMPLE the visitor replaces with the rate from
+ * their own offer — NEVER present it as a quoted, typical, or current rate.
+ */
+const CALC = {
+  amount: 15000,
+  rate: 9,
+  term: 15,
+  amountMin: 5000,
+  amountMax: 100000,
+  termMin: 5,
+  termMax: 30,
+  rateMin: 3,
+  rateMax: 18,
+  compareTerms: [10, 15, 20],
+};
+const monthlyPayment = (principal: number, annualRatePct: number, years: number) => {
+  const r = annualRatePct / 100 / 12;
+  const n = years * 12;
+  return r === 0 ? principal / n : (principal * r) / (1 - Math.pow(1 + r, -n));
+};
+const usd = (v: number, digits = 0) =>
+  v.toLocaleString("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  });
+const defMonthly = monthlyPayment(CALC.amount, CALC.rate, CALC.term);
+const trackPct = (value: number, min: number, max: number) =>
+  `--pct:${(((value - min) / (max - min)) * 100).toFixed(2)}%`;
+
 const seo = {
   title: "Roof Financing Options — Houston & Montgomery County",
   description:
@@ -352,6 +387,176 @@ const seo = {
         </ol>
       </div>
 
+      {/* Payment calculator — client-side only, nothing leaves the browser. */}
+      <div
+        class="nv-calc mt-14 rounded-[var(--radius-card)] bg-[color:var(--color-navy-950)] p-6 md:p-10"
+      >
+        <h3 class="font-serif text-2xl text-white md:text-3xl">Put a monthly number on it</h3>
+        <p class="mt-2.5 max-w-2xl text-sm leading-relaxed text-[color:var(--color-navy-100)]">
+          The payment math below is exact — the rate is the part that's yours. Check your offers
+          first (option #1 uses a soft credit pull), then slide in the rate you're actually quoted.
+        </p>
+
+        <div class="mt-8 grid gap-10 md:grid-cols-[1fr_minmax(300px,380px)] md:gap-12">
+          <div class="space-y-8">
+            <div>
+              <div class="flex items-baseline justify-between gap-4">
+                <label for="calc-amount" class="text-sm font-semibold text-white">Loan amount</label
+                >
+                <span
+                  id="calc-out-amount"
+                  class="font-serif text-2xl text-[color:var(--color-gold-300)]"
+                  >{usd(CALC.amount)}</span
+                >
+              </div>
+              <input
+                id="calc-amount"
+                type="range"
+                min={CALC.amountMin}
+                max={CALC.amountMax}
+                step="250"
+                value={CALC.amount}
+                style={trackPct(CALC.amount, CALC.amountMin, CALC.amountMax)}
+                class="mt-4 w-full"
+              />
+              <div class="mt-1.5 flex justify-between text-[11px] text-white/50">
+                <span>{usd(CALC.amountMin)}</span>
+                <span>{usd(CALC.amountMax)}</span>
+              </div>
+            </div>
+
+            <div>
+              <div class="flex items-baseline justify-between gap-4">
+                <label for="calc-term" class="text-sm font-semibold text-white"
+                  >Repayment term</label
+                >
+                <span
+                  id="calc-out-term"
+                  class="font-serif text-2xl text-[color:var(--color-gold-300)]"
+                  >{CALC.term} years</span
+                >
+              </div>
+              <input
+                id="calc-term"
+                type="range"
+                min={CALC.termMin}
+                max={CALC.termMax}
+                step="1"
+                value={CALC.term}
+                style={trackPct(CALC.term, CALC.termMin, CALC.termMax)}
+                class="mt-4 w-full"
+              />
+              <div class="mt-1.5 flex justify-between text-[11px] text-white/50">
+                <span>{CALC.termMin} years</span>
+                <span>{CALC.termMax} years</span>
+              </div>
+            </div>
+
+            <div>
+              <div class="flex items-baseline justify-between gap-4">
+                <label for="calc-rate" class="text-sm font-semibold text-white"
+                  >Interest rate (APR)</label
+                >
+                <span class="flex items-baseline gap-1">
+                  <input
+                    id="calc-rate-num"
+                    type="number"
+                    inputmode="decimal"
+                    min="0"
+                    max="36"
+                    step="0.25"
+                    value={CALC.rate.toFixed(2)}
+                    aria-label="Interest rate percent, typed directly"
+                    class="w-24 rounded-lg border border-white/20 bg-white/10 px-2.5 py-1 text-right font-serif text-xl text-[color:var(--color-gold-300)]"
+                  />
+                  <span class="font-serif text-xl text-[color:var(--color-gold-300)]">%</span>
+                </span>
+              </div>
+              <input
+                id="calc-rate"
+                type="range"
+                min={CALC.rateMin}
+                max={CALC.rateMax}
+                step="0.25"
+                value={CALC.rate}
+                style={trackPct(CALC.rate, CALC.rateMin, CALC.rateMax)}
+                class="mt-4 w-full"
+              />
+              <div class="mt-1.5 flex justify-between text-[11px] text-white/50">
+                <span>{CALC.rateMin}%</span>
+                <span>{CALC.rateMax}%</span>
+              </div>
+              <p class="mt-2.5 text-xs leading-relaxed text-white/60">
+                The preset is an example only — your real rate comes from your offer or
+                prequalification, and that's the one to enter here.
+              </p>
+            </div>
+          </div>
+
+          <div
+            class="self-start rounded-2xl border border-white/10 bg-white/5 p-6 md:p-7"
+            aria-live="polite"
+          >
+            <p class="text-xs font-semibold tracking-[0.14em] text-white/60 uppercase">
+              Estimated monthly payment
+            </p>
+            <p class="mt-2">
+              <span
+                id="calc-out-monthly"
+                class="font-serif text-5xl text-[color:var(--color-gold-300)]"
+                >{usd(defMonthly, 2)}</span
+              >
+              <span class="text-lg text-white/60">/mo</span>
+            </p>
+            <dl class="mt-6 grid grid-cols-2 gap-4 border-t border-white/10 pt-5 text-sm">
+              <div>
+                <dt class="text-white/60">Total interest</dt>
+                <dd id="calc-out-interest" class="mt-1 font-semibold text-white">
+                  {usd(defMonthly * CALC.term * 12 - CALC.amount)}
+                </dd>
+              </div>
+              <div>
+                <dt class="text-white/60">Total repaid</dt>
+                <dd id="calc-out-total" class="mt-1 font-semibold text-white">
+                  {usd(defMonthly * CALC.term * 12)}
+                </dd>
+              </div>
+            </dl>
+            <div class="mt-6 border-t border-white/10 pt-5">
+              <p class="text-xs font-semibold tracking-[0.14em] text-white/60 uppercase">
+                Same loan, other terms
+              </p>
+              <div id="calc-compare" class="mt-3 flex flex-wrap gap-2">
+                {
+                  CALC.compareTerms.map((y) => (
+                    <span
+                      data-years={y}
+                      class="rounded-full bg-white/10 px-3 py-1.5 text-xs font-semibold text-white"
+                    >
+                      {y} yr · {usd(monthlyPayment(CALC.amount, CALC.rate, y), 2)}/mo
+                    </span>
+                  ))
+                }
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <p class="mt-7 text-[11px] leading-relaxed text-white/50">
+          Principal and interest only — lender fees and closing costs aren't included. This is an
+          estimate for planning, not an offer of credit or a quoted rate; your lender's figures
+          govern. Nothing you enter here is saved or sent anywhere.
+        </p>
+        <noscript>
+          <p class="mt-3 text-[11px] leading-relaxed text-white/50">
+            The sliders need JavaScript — the numbers shown are a worked example at {
+              usd(CALC.amount)
+            }
+            and {CALC.rate}% APR.
+          </p>
+        </noscript>
+      </div>
+
       <p class="mt-8 max-w-3xl text-xs leading-relaxed text-[color:var(--color-ink-500)]">
         Northvale Roofing is a roofing contractor — not a lender, loan broker, or financial advisor
         — and lists these companies as a convenience, not an endorsement. Every amount, term, and
@@ -424,4 +629,130 @@ const seo = {
       transition: none;
     }
   }
+
+  /* Payment calculator sliders — gold fill up to the thumb via --pct
+     (set server-side for the defaults, kept live by the page script). */
+  .nv-calc input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 6px;
+    border-radius: 9999px;
+    background: linear-gradient(
+      to right,
+      var(--color-gold-400) var(--pct, 0%),
+      rgb(255 255 255 / 0.15) var(--pct, 0%)
+    );
+    cursor: pointer;
+  }
+  .nv-calc input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 24px;
+    width: 24px;
+    border-radius: 9999px;
+    background: var(--color-gold-300);
+    border: 4px solid var(--color-navy-950);
+    box-shadow: 0 0 0 1.5px var(--color-gold-400);
+  }
+  .nv-calc input[type="range"]::-moz-range-thumb {
+    height: 24px;
+    width: 24px;
+    border-radius: 9999px;
+    background: var(--color-gold-300);
+    border: 4px solid var(--color-navy-950);
+    box-shadow: 0 0 0 1.5px var(--color-gold-400);
+  }
+  .nv-calc input[type="range"]:focus-visible,
+  .nv-calc input[type="number"]:focus-visible {
+    outline: 2px solid var(--color-gold-400);
+    outline-offset: 3px;
+  }
+  /* Hide the number input's spin buttons — the slider is the stepper. */
+  .nv-calc input[type="number"]::-webkit-outer-spin-button,
+  .nv-calc input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  .nv-calc input[type="number"] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
 </style>
+
+<script>
+  // Payment calculator — pure client-side amortization; nothing the visitor
+  // enters is saved or sent anywhere. Mirrors the frontmatter defaults.
+  const input = (id: string) => document.getElementById(id) as HTMLInputElement | null;
+  const amountIn = input("calc-amount");
+  const termIn = input("calc-term");
+  const rateIn = input("calc-rate");
+  const rateNum = input("calc-rate-num");
+  const outAmount = document.getElementById("calc-out-amount");
+  const outTerm = document.getElementById("calc-out-term");
+  const outMonthly = document.getElementById("calc-out-monthly");
+  const outInterest = document.getElementById("calc-out-interest");
+  const outTotal = document.getElementById("calc-out-total");
+  const compare = document.getElementById("calc-compare");
+
+  if (
+    amountIn &&
+    termIn &&
+    rateIn &&
+    rateNum &&
+    outAmount &&
+    outTerm &&
+    outMonthly &&
+    outInterest &&
+    outTotal &&
+    compare
+  ) {
+    const usd = (v: number, digits = 0) =>
+      v.toLocaleString("en-US", {
+        style: "currency",
+        currency: "USD",
+        minimumFractionDigits: digits,
+        maximumFractionDigits: digits,
+      });
+    const payment = (principal: number, annualRatePct: number, years: number) => {
+      const r = annualRatePct / 100 / 12;
+      const n = years * 12;
+      return r === 0 ? principal / n : (principal * r) / (1 - Math.pow(1 + r, -n));
+    };
+    const paintTrack = (el: HTMLInputElement) => {
+      const min = Number(el.min);
+      const max = Number(el.max);
+      const pct = ((Number(el.value) - min) / (max - min)) * 100;
+      el.style.setProperty("--pct", `${Math.min(100, Math.max(0, pct))}%`);
+    };
+    // The typed rate is the source of truth (it may sit outside the slider's
+    // 3–18% range); the slider is a convenience that writes into it.
+    const currentRate = () => Math.min(36, Math.max(0, Number(rateNum.value) || 0));
+    const update = () => {
+      const amount = Number(amountIn.value);
+      const years = Number(termIn.value);
+      const rate = currentRate();
+      const m = payment(amount, rate, years);
+      outAmount.textContent = usd(amount);
+      outTerm.textContent = `${years} year${years === 1 ? "" : "s"}`;
+      outMonthly.textContent = usd(m, 2);
+      outInterest.textContent = usd(Math.max(0, m * years * 12 - amount));
+      outTotal.textContent = usd(m * years * 12);
+      compare.querySelectorAll("[data-years]").forEach((chip) => {
+        const y = Number(chip.getAttribute("data-years"));
+        chip.textContent = `${y} yr · ${usd(payment(amount, rate, y), 2)}/mo`;
+      });
+      [amountIn, termIn, rateIn].forEach(paintTrack);
+    };
+    amountIn.addEventListener("input", update);
+    termIn.addEventListener("input", update);
+    rateIn.addEventListener("input", () => {
+      rateNum.value = Number(rateIn.value).toFixed(2);
+      update();
+    });
+    rateNum.addEventListener("input", () => {
+      rateIn.value = String(currentRate());
+      update();
+    });
+    update();
+  }
+</script>
