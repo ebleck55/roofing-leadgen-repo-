@@ -976,7 +976,10 @@ often. NOTHING from the UNVERIFIED list goes on the site.
   no appraisal, no lien**; fixed rates. — SOURCE: lightstream.com (via search
   snippets, 2026-08-10).
 - Amounts **$5,000–$100,000**; terms up to **20 years** available on larger
-  home-improvement loans. — SOURCE: lightstream.com + NerdWallet 2026 review.
+  home-improvement loans (standard terms start around 2 years, so mid-length
+  terms like 5 years exist — supports the hero chip's "5–30 yrs" range, whose
+  30-year ceiling is Figure's). — SOURCE: lightstream.com + NerdWallet 2026
+  review (accessed 2026-08-10).
 - **Good-to-excellent credit** profiles only. **No soft-pull prequalification**
   — applying is a full (hard-inquiry) application. — SOURCE: NerdWallet /
   Credible 2026 reviews.
