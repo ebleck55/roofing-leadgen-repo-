@@ -261,76 +261,12 @@ const seo = {
       <h2 class="text-3xl md:text-4xl">Find your financing fit</h2>
       <div class="rule-gold mt-5" aria-hidden="true"></div>
       <p class="mt-6 max-w-2xl leading-relaxed text-[color:var(--color-ink-700)]">
-        Two paths, five options, ranked in the order most homeowners should try them. Start with the
-        question that decides everything:
+        Five options, ranked in the order most homeowners should try them — compare broadly first,
+        then match the option to your credit and your home's equity.
       </p>
 
-      {/* The fork: the one decision that splits the five options. */}
-      <div class="mt-10 grid gap-5 md:grid-cols-2">
-        <div
-          class="relative rounded-[var(--radius-card)] border border-[color:var(--color-navy-100)] bg-white p-6 md:p-7"
-        >
-          <span
-            class="text-xs font-semibold tracking-[0.14em] text-[color:var(--color-gold-600)] uppercase"
-            >Path A — most roofs</span
-          >
-          <h3 class="mt-2 text-xl text-[color:var(--color-navy-900)]">Keep your home out of it</h3>
-          <p class="mt-2.5 text-sm leading-relaxed text-[color:var(--color-ink-700)]">
-            A personal / home-improvement loan. Approval rests on your credit, not your house — no
-            lien, no appraisal, and funding is usually fast. The simpler path for a typical roof.
-          </p>
-          <p class="mt-4 flex flex-wrap items-center gap-2 text-sm font-semibold">
-            <span class="text-[color:var(--color-ink-500)]">Your options:</span>
-            <a
-              href="#option-1"
-              class="rounded-full border border-[color:var(--color-navy-100)] px-3 py-1 text-[color:var(--color-navy-900)] hover:border-[color:var(--color-gold-400)] hover:text-[color:var(--color-gold-600)]"
-              >#1 Acorn</a
-            >
-            <a
-              href="#option-2"
-              class="rounded-full border border-[color:var(--color-navy-100)] px-3 py-1 text-[color:var(--color-navy-900)] hover:border-[color:var(--color-gold-400)] hover:text-[color:var(--color-gold-600)]"
-              >#2 LightStream</a
-            >
-          </p>
-        </div>
-        <div
-          class="relative rounded-[var(--radius-card)] border border-[color:var(--color-navy-100)] bg-white p-6 md:p-7"
-        >
-          <span
-            class="text-xs font-semibold tracking-[0.14em] text-[color:var(--color-gold-600)] uppercase"
-            >Path B — lowest monthly payment</span
-          >
-          <h3 class="mt-2 text-xl text-[color:var(--color-navy-900)]">
-            Use your equity to shrink the payment
-          </h3>
-          <p class="mt-2.5 text-sm leading-relaxed text-[color:var(--color-ink-700)]">
-            A home-equity loan or HELOC, secured by the house. Rates are usually lower and terms
-            longer — that's what shrinks the monthly payment — but there's a lien and more closing
-            steps, and Texas caps everything borrowed against your home at 80% of its value.
-          </p>
-          <p class="mt-4 flex flex-wrap items-center gap-2 text-sm font-semibold">
-            <span class="text-[color:var(--color-ink-500)]">Your options:</span>
-            <a
-              href="#option-3"
-              class="rounded-full border border-[color:var(--color-navy-100)] px-3 py-1 text-[color:var(--color-navy-900)] hover:border-[color:var(--color-gold-400)] hover:text-[color:var(--color-gold-600)]"
-              >#3 Frost</a
-            >
-            <a
-              href="#option-4"
-              class="rounded-full border border-[color:var(--color-navy-100)] px-3 py-1 text-[color:var(--color-navy-900)] hover:border-[color:var(--color-gold-400)] hover:text-[color:var(--color-gold-600)]"
-              >#4 TDECU</a
-            >
-            <a
-              href="#option-5"
-              class="rounded-full border border-[color:var(--color-navy-100)] px-3 py-1 text-[color:var(--color-navy-900)] hover:border-[color:var(--color-gold-400)] hover:text-[color:var(--color-gold-600)]"
-              >#5 Figure</a
-            >
-          </p>
-        </div>
-      </div>
-
       {/* CSS-only matcher: radios + :has() highlight matching ranked cards. */}
-      <div class="nv-finder mt-14">
+      <div class="nv-finder mt-10">
         {
           FITS.map((f, i) => (
             <input
