@@ -91,7 +91,7 @@ const seo = {
               </label>
               <div
                 id="rt-pac"
-                class="mt-2 rounded-xl border border-[color:var(--color-navy-100)] bg-white p-1.5 shadow-sm [&_input]:text-base"
+                class="mt-2 rounded-full border border-[color:var(--color-navy-100)] bg-white px-3 py-1.5 shadow-sm transition-[border-color,box-shadow] focus-within:border-[color:var(--color-gold-400)] focus-within:shadow-[0_0_0_3px_rgb(201_162_108/0.22)] [&_input]:text-base"
               >
                 {/* PlaceAutocompleteElement mounts here; plain input until then. */}
                 <input
@@ -275,10 +275,21 @@ const seo = {
     border-color: var(--color-gold-400) !important;
     color: var(--color-navy-950) !important;
   }
-  /* The Google autocomplete web component fills its white shell. */
+  /* The Google autocomplete web component fills its white pill shell.
+     color-scheme + the gmp-mat tokens pin it to our light palette even when
+     the visitor's device is in dark mode (otherwise it paints itself black). */
   #rt-pac gmp-place-autocomplete {
     display: block;
     width: 100%;
+    color-scheme: light;
+    font-family: inherit;
+    --gmp-mat-color-surface: #ffffff;
+    --gmp-mat-color-on-surface: var(--color-ink-800);
+    --gmp-mat-color-on-surface-variant: var(--color-ink-500);
+    --gmp-mat-color-primary: var(--color-gold-600);
+    --gmp-mat-color-outline: transparent;
+    --gmp-mat-color-outline-variant: var(--color-navy-100);
+    background: #ffffff;
   }
 </style>
 
