@@ -17,12 +17,18 @@ import { faqPageJsonLd } from "~/lib/seo";
  * the lead form's address + notes — that's the lead hook: the exact number
  * comes from the free written estimate, never from a satellite guess.
  *
- * Env-gated like every integration: without PUBLIC_GOOGLE_MAPS_BROWSER_KEY
- * the page renders noindex with a friendly fallback and an owner banner.
+ * Key handling (owner decision 2026-08-11, "run it like Wix — no Vercel"):
+ * the browser key below is Northvale's own PUBLIC map key, committed on
+ * purpose. It is safe to ship ONLY because it is (a) public-by-design — it
+ * ships in the page HTML on every load regardless — and (b) locked in the
+ * Google console to this site's domains and to the Maps JS / Places / Solar
+ * APIs, with quota caps. NEVER commit a server/secret key this way. A
+ * PUBLIC_GOOGLE_MAPS_BROWSER_KEY env var, if ever set in Vercel, overrides it.
  */
 
-const mapsKey = import.meta.env.PUBLIC_GOOGLE_MAPS_BROWSER_KEY ?? "";
-const hasKey = mapsKey.trim().length > 0;
+const mapsKey =
+  (import.meta.env.PUBLIC_GOOGLE_MAPS_BROWSER_KEY ?? "").trim() ||
+  "AIzaSyBjYX0eqE0U1oMRtoQoSaTRxgab-S4zQFI";
 
 const FAQS = [
   {
@@ -48,25 +54,11 @@ const seo = {
   description:
     "Type your address and see your roof's size in seconds — squares, square footage, and pitch from aerial imagery, or trace it yourself on the satellite map. Free written estimate for the exact number.",
   pathname: "/roof-size-calculator",
-  noindex: !hasKey,
   jsonLd: [faqPageJsonLd(FAQS)],
 };
 ---
 
 <BaseLayout seo={seo}>
-  {
-    !hasKey && (
-      <div class="border-b-2 border-[color:var(--color-gold-400)] bg-[color:var(--color-gold-50)] px-4 py-3 text-sm text-[color:var(--color-ink-800)]">
-        <div class="mx-auto max-w-6xl">
-          <strong>NEEDS KEYS — draft, not indexed.</strong> The measuring tool activates once{" "}
-          <code>PUBLIC_GOOGLE_MAPS_BROWSER_KEY</code> (browser: Maps JavaScript + Places) and{" "}
-          <code>GOOGLE_MAPS_API_KEY</code> (server: Solar API) are set in Vercel and the site is
-          redeployed.
-        </div>
-      </div>
-    )
-  }
-
   <section class="page-header-band mx-auto max-w-6xl px-4 py-12 md:py-16">
     <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Roof size calculator" }]} />
     <h1 class="mt-6 text-4xl md:text-5xl">How big is your roof?</h1>
@@ -85,7 +77,7 @@ const seo = {
   <TrustBar />
 
   {
-    hasKey ? (
+    (
       <section class="bg-[color:var(--color-navy-950)]">
         <div class="mx-auto max-w-6xl px-4 py-12 md:py-16">
           <div id="nv-rooftool" data-key={mapsKey} class="grid gap-8 lg:grid-cols-[1fr_380px]">
@@ -210,22 +202,6 @@ const seo = {
                 A satellite estimate is for orientation — trees, new construction, and complex
                 rooflines can throw it off. We measure on-site before any contract price.
               </p>
-            </div>
-          </div>
-        </div>
-      </section>
-    ) : (
-      <section class="bg-[color:var(--color-navy-950)]">
-        <div class="mx-auto max-w-6xl px-4 py-12 md:py-16">
-          <div class="rounded-2xl border border-white/10 bg-white/5 p-8 text-center">
-            <p class="font-serif text-2xl text-white">The instant measuring tool is warming up.</p>
-            <p class="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-[color:var(--color-navy-100)]">
-              Meanwhile the measurement that actually matters is free anyway: a same-day inspection
-              with your roof's exact size — and your exact price — in writing.
-            </p>
-            <div class="mt-6 flex flex-wrap justify-center gap-3">
-              <CTAButton href="/contact" label="Book free inspection" ctaId="rooftool-fallback" />
-              <PhoneCTAButton ctaId="rooftool-fallback-call" variant="ghost-dark" />
             </div>
           </div>
         </div>
@@ -402,13 +378,74 @@ const seo = {
           enableManual();
         }
 
-        // --- Auto measurement via our server proxy ---
-        async function measureAuto(lat: number, lng: number) {
-          setStatus("Measuring your roof from aerial imagery…");
+        // --- Auto measurement ---
+        // Primary: the site's one public key calls the Solar API straight
+        // from the browser (the key is domain-locked + quota-capped, so this
+        // is the whole configuration — "Wix-style" per the owner). If the
+        // optional server proxy (/api/roof-measure) is ever configured in
+        // Vercel, it is tried first and simply wins.
+        function solarReduce(data: any) {
+          const sp = data?.solarPotential;
+          const segs: any[] = Array.isArray(sp?.roofSegmentStats) ? sp.roofSegmentStats : [];
+          let roofM2 = 0;
+          let planM2 = 0;
+          let pitchWeighted = 0;
+          for (const seg of segs) {
+            const pitchDeg = Number(seg?.pitchDegrees ?? 0);
+            const area = Number(seg?.stats?.areaMeters2 ?? 0);
+            const ground = Number(seg?.stats?.groundAreaMeters2 ?? 0);
+            const cos = Math.cos((pitchDeg * Math.PI) / 180) || 1;
+            const segRoof = area || ground / cos;
+            roofM2 += segRoof;
+            planM2 += ground || area * cos;
+            pitchWeighted += pitchDeg * segRoof;
+          }
+          if (roofM2 <= 0 && sp?.wholeRoofStats) {
+            roofM2 = Number(sp.wholeRoofStats.areaMeters2 ?? 0);
+            planM2 = Number(sp.wholeRoofStats.groundAreaMeters2 ?? 0) || roofM2;
+          }
+          if (roofM2 <= 0) return null;
+          const M2_TO_FT2 = 10.7639;
+          const roofFt2 = roofM2 * M2_TO_FT2;
+          return {
+            available: true,
+            roofFt2: Math.round(roofFt2),
+            planFt2: Math.round((planM2 || roofM2) * M2_TO_FT2),
+            avgPitchDeg: segs.length > 0 ? Math.round(pitchWeighted / roofM2) : null,
+            segments: segs.length,
+            imageryDate: data?.imageryDate ?? null,
+          };
+        }
+
+        async function fetchMeasurement(lat: number, lng: number): Promise<any | null> {
+          // Optional server proxy first (present only when Vercel env is set).
           try {
             const res = await fetch(`/api/roof-measure?lat=${lat}&lng=${lng}`);
             const data = await res.json();
-            if (!data.available) {
+            if (data.available) return data;
+            if (data.reason && data.reason !== "unconfigured") return null; // real "no coverage"
+          } catch {
+            /* fall through to direct */
+          }
+          // Direct from the browser with the site's public, domain-locked key.
+          try {
+            const res = await fetch(
+              "https://solar.googleapis.com/v1/buildingInsights:findClosest" +
+                `?location.latitude=${lat}&location.longitude=${lng}` +
+                `&requiredQuality=LOW&key=${encodeURIComponent(KEY)}`,
+            );
+            if (!res.ok) return null;
+            return solarReduce(await res.json());
+          } catch {
+            return null;
+          }
+        }
+
+        async function measureAuto(lat: number, lng: number) {
+          setStatus("Measuring your roof from aerial imagery…");
+          try {
+            const data = await fetchMeasurement(lat, lng);
+            if (!data) {
               setStatus(
                 "No aerial roof data for this address — trace your roof with the ✏️ tool instead.",
               );
