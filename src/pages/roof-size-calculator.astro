@@ -1,0 +1,646 @@
+---
+import BaseLayout from "@layouts/BaseLayout.astro";
+import Breadcrumbs from "@components/Breadcrumbs.astro";
+import CTAButton from "@components/CTAButton.astro";
+import PhoneCTAButton from "@components/PhoneCTAButton.astro";
+import LeadForm from "@components/LeadForm.astro";
+import TrustBar from "@components/TrustBar.astro";
+import Faq from "@components/Faq.astro";
+import { faqPageJsonLd } from "~/lib/seo";
+
+/**
+ * Roof size calculator — measurement only, deliberately NO pricing (owner,
+ * 2026-08-11). Auto mode reads Google's Solar API through our server proxy
+ * (/api/roof-measure) so the key stays private; where aerial data is missing
+ * the visitor traces the roof on the satellite map instead (honest pitch
+ * multipliers, no hidden "waste" inflation). A finished measurement prefill's
+ * the lead form's address + notes — that's the lead hook: the exact number
+ * comes from the free written estimate, never from a satellite guess.
+ *
+ * Key handling (owner decision 2026-08-11, "run it like Wix — no Vercel"):
+ * the browser key below is Northvale's own PUBLIC map key, committed on
+ * purpose. It is safe to ship ONLY because it is (a) public-by-design — it
+ * ships in the page HTML on every load regardless — and (b) locked in the
+ * Google console to this site's domains and to the Maps JS / Places / Solar
+ * APIs, with quota caps. NEVER commit a server/secret key this way. A
+ * PUBLIC_GOOGLE_MAPS_BROWSER_KEY env var, if ever set in Vercel, overrides it.
+ */
+
+const mapsKey =
+  (import.meta.env.PUBLIC_GOOGLE_MAPS_BROWSER_KEY ?? "").trim() ||
+  "AIzaSyBjYX0eqE0U1oMRtoQoSaTRxgab-S4zQFI";
+
+const FAQS = [
+  {
+    q: "What is a roofing “square”?",
+    a: "One square is 100 square feet of roof surface — the unit every roofer prices and orders materials by. A roof with 2,300 square feet of surface is a 23-square roof. Note that roof surface is bigger than the house's floor plan, because slopes add area.",
+  },
+  {
+    q: "How accurate is a satellite measurement?",
+    a: "Good, not gospel. Google's aerial data measures each roof plane and its slope, and on most established homes it lands close. It gets less reliable under heavy tree cover, on brand-new construction the imagery hasn't caught up with, and on complex rooflines. That's why we verify every measurement on-site before a contract price — the tool is for orientation, not for signing.",
+  },
+  {
+    q: "Why doesn't this show a price?",
+    a: "Because size is only one input. Pitch and access, layers to tear off, decking condition, flashing details, and the material you choose all move the real number. A tool that turns a satellite guess into a dollar figure is guessing twice. We'd rather measure it properly for free and put the exact price in writing before we leave your driveway.",
+  },
+  {
+    q: "Do you save my address?",
+    a: "No. The lookup runs against Google's mapping data and we don't store what you type unless you choose to send the contact form. Your measurement stays on your screen.",
+  },
+];
+
+const seo = {
+  title: "Roof Size Calculator — Measure Your Roof by Address",
+  description:
+    "Type your address and see your roof's size in seconds — squares, square footage, and pitch from aerial imagery, or trace it yourself on the satellite map. Free written estimate for the exact number.",
+  pathname: "/roof-size-calculator",
+  jsonLd: [faqPageJsonLd(FAQS)],
+};
+---
+
+<BaseLayout seo={seo}>
+  <section class="page-header-band mx-auto max-w-6xl px-4 py-12 md:py-16">
+    <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Roof size calculator" }]} />
+    <h1 class="mt-6 text-4xl md:text-5xl">How big is your roof?</h1>
+    <div class="rule-gold mt-6" aria-hidden="true"></div>
+    <p class="mt-6 max-w-2xl text-lg leading-relaxed text-[color:var(--color-ink-700)]">
+      Type your address and get your roof's size in seconds — measured plane by plane from aerial
+      imagery, or traced by you on the satellite map. Size only, no price games: the exact number
+      comes free, in writing, from a real inspection.
+    </p>
+    <div class="mt-6 flex flex-wrap gap-3">
+      <CTAButton href="/contact" label="Get the exact number free" ctaId="rooftool-book" />
+      <PhoneCTAButton ctaId="rooftool-call" />
+    </div>
+  </section>
+
+  <TrustBar />
+
+  {
+    (
+      <section class="border-y border-[color:var(--color-navy-100)] bg-[color:var(--color-surface-ivory)]">
+        <div class="mx-auto max-w-6xl px-4 py-12 md:py-16">
+          <div id="nv-rooftool" data-key={mapsKey} class="grid gap-8 lg:grid-cols-[1fr_380px]">
+            {/* Map + controls */}
+            <div>
+              <label
+                for="rt-address"
+                class="text-sm font-semibold text-[color:var(--color-navy-900)]"
+              >
+                Your address
+              </label>
+              <div
+                id="rt-pac"
+                class="mt-2 rounded-full border border-[color:var(--color-navy-100)] bg-white px-3 py-1.5 shadow-sm transition-[border-color,box-shadow] focus-within:border-[color:var(--color-gold-400)] focus-within:shadow-[0_0_0_3px_rgb(201_162_108/0.22)] [&_input]:text-base"
+              >
+                {/* PlaceAutocompleteElement mounts here; plain input until then. */}
+                <input
+                  id="rt-address"
+                  type="text"
+                  placeholder="123 Main St, Spring, TX"
+                  class="w-full rounded-lg border-0 px-3 py-2 text-base text-[color:var(--color-ink-800)] outline-none"
+                />
+              </div>
+              <p
+                id="rt-status"
+                class="mt-2.5 min-h-5 text-sm text-[color:var(--color-ink-600)]"
+                aria-live="polite"
+              >
+                Start typing and pick your address — we'll find your roof.
+              </p>
+              <div
+                id="rt-map"
+                class="mt-4 h-[380px] w-full overflow-hidden rounded-[var(--radius-card)] border border-[color:var(--color-navy-100)] md:h-[440px]"
+              />
+              <div class="mt-4 flex flex-wrap items-center gap-2.5">
+                <button
+                  id="rt-draw"
+                  type="button"
+                  class="rounded-full border border-[color:var(--color-navy-100)] bg-white px-4 py-2 text-sm font-semibold text-[color:var(--color-navy-900)] transition-colors hover:border-[color:var(--color-gold-400)] hover:text-[color:var(--color-gold-600)]"
+                >
+                  ✏️ Trace it myself
+                </button>
+                <button
+                  id="rt-reset"
+                  type="button"
+                  class="rounded-full border border-[color:var(--color-navy-100)] bg-white px-4 py-2 text-sm font-semibold text-[color:var(--color-navy-900)] transition-colors hover:border-[color:var(--color-gold-400)] hover:text-[color:var(--color-gold-600)]"
+                >
+                  Start over
+                </button>
+                <button
+                  id="rt-undo"
+                  type="button"
+                  class="rt-tracebtn hidden rounded-full border border-[color:var(--color-navy-100)] bg-white px-4 py-2 text-sm font-semibold text-[color:var(--color-navy-900)] transition-colors hover:border-[color:var(--color-gold-400)] hover:text-[color:var(--color-gold-600)]"
+                >
+                  Undo corner
+                </button>
+                <button
+                  id="rt-newsection"
+                  type="button"
+                  class="rt-tracebtn hidden rounded-full border border-[color:var(--color-navy-100)] bg-white px-4 py-2 text-sm font-semibold text-[color:var(--color-navy-900)] transition-colors hover:border-[color:var(--color-gold-400)] hover:text-[color:var(--color-gold-600)]"
+                >
+                  New roof section
+                </button>
+                <button
+                  id="rt-clear"
+                  type="button"
+                  class="rt-tracebtn hidden rounded-full border border-[color:var(--color-navy-100)] bg-white px-4 py-2 text-sm font-semibold text-[color:var(--color-navy-900)] transition-colors hover:border-[color:var(--color-gold-400)] hover:text-[color:var(--color-gold-600)]"
+                >
+                  Clear outline
+                </button>
+                <div id="rt-pitch" class="hidden flex-wrap items-center gap-2" data-mult="1.118">
+                  <span class="text-xs text-[color:var(--color-ink-600)]">Roof steepness:</span>
+                  <button
+                    type="button"
+                    data-mult="1.054"
+                    class="rt-pitch-btn rounded-full border border-[color:var(--color-navy-100)] bg-white px-3 py-1.5 text-xs font-semibold text-[color:var(--color-navy-900)]"
+                  >
+                    Low (4/12)
+                  </button>
+                  <button
+                    type="button"
+                    data-mult="1.118"
+                    class="rt-pitch-btn rt-pitch-active rounded-full border border-[color:var(--color-navy-100)] bg-white px-3 py-1.5 text-xs font-semibold text-[color:var(--color-navy-900)]"
+                  >
+                    Average (6/12)
+                  </button>
+                  <button
+                    type="button"
+                    data-mult="1.25"
+                    class="rt-pitch-btn rounded-full border border-[color:var(--color-navy-100)] bg-white px-3 py-1.5 text-xs font-semibold text-[color:var(--color-navy-900)]"
+                  >
+                    Steep (9/12)
+                  </button>
+                  <button
+                    type="button"
+                    data-mult="1.414"
+                    class="rt-pitch-btn rounded-full border border-[color:var(--color-navy-100)] bg-white px-3 py-1.5 text-xs font-semibold text-[color:var(--color-navy-900)]"
+                  >
+                    Very steep (12/12)
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Results */}
+            <div
+              class="self-start rounded-2xl border border-[color:var(--color-navy-100)] bg-white p-6 shadow-sm md:p-7"
+              aria-live="polite"
+            >
+              <p class="text-xs font-semibold tracking-[0.14em] text-[color:var(--color-ink-500)] uppercase">
+                Your roof measures
+              </p>
+              <p class="mt-2">
+                <span
+                  id="rt-squares"
+                  class="font-serif text-5xl text-[color:var(--color-gold-600)]"
+                >
+                  —
+                </span>
+                <span class="text-lg text-[color:var(--color-ink-500)]"> squares</span>
+              </p>
+              <dl class="mt-6 space-y-3 border-t border-[color:var(--color-navy-100)] pt-5 text-sm">
+                <div class="flex items-baseline justify-between gap-4">
+                  <dt class="text-[color:var(--color-ink-500)]">Roof surface</dt>
+                  <dd id="rt-surface" class="font-semibold text-[color:var(--color-navy-900)]">
+                    —
+                  </dd>
+                </div>
+                <div class="flex items-baseline justify-between gap-4">
+                  <dt class="text-[color:var(--color-ink-500)]">Building footprint</dt>
+                  <dd id="rt-footprint" class="font-semibold text-[color:var(--color-navy-900)]">
+                    —
+                  </dd>
+                </div>
+                <div class="flex items-baseline justify-between gap-4">
+                  <dt class="text-[color:var(--color-ink-500)]">Average pitch</dt>
+                  <dd id="rt-pitchout" class="font-semibold text-[color:var(--color-navy-900)]">
+                    —
+                  </dd>
+                </div>
+              </dl>
+              <p
+                id="rt-meta"
+                class="mt-4 min-h-4 text-xs leading-relaxed text-[color:var(--color-ink-500)]"
+              />
+              <a
+                href="#roof-lead"
+                class="mt-6 inline-flex w-full items-center justify-center rounded-full bg-[color:var(--color-gold-400)] px-5 py-3 text-sm font-bold text-[color:var(--color-navy-950)] transition-colors hover:bg-[color:var(--color-gold-300)]"
+              >
+                Get the exact number, free & in writing
+              </a>
+              <p class="mt-3 text-xs leading-relaxed text-[color:var(--color-ink-500)]">
+                A satellite estimate is for orientation — trees, new construction, and complex
+                rooflines can throw it off. We measure on-site before any contract price.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  <section class="mx-auto grid max-w-6xl gap-10 px-4 py-12 md:grid-cols-[1fr_400px]">
+    <article class="prose-northvale">
+      <h2>What the numbers mean</h2>
+      <p>
+        Roofers measure in <strong>squares</strong> — one square is 100 square feet of roof surface. Your
+        roof's surface is larger than your home's floor plan, because slope adds area: the steeper the
+        pitch, the more roof sits over the same footprint. When aerial data is available we measure every
+        roof plane and its own slope; when it isn't, you trace the building outline and pick a steepness,
+        and we do the honest math from there.
+      </p>
+      <h2>Why we stop at size</h2>
+      <p>
+        Plenty of tools convert a satellite guess straight into a dollar figure. We don't, on
+        purpose. The real price of a roof depends on things no satellite can see — how many layers
+        come off, what the decking looks like underneath, flashing details, access, and the material
+        you choose. Size is the honest half of the answer; the other half is a free inspection and
+        an exact price in writing before we leave the driveway.
+      </p>
+    </article>
+    <aside id="roof-lead" class="scroll-mt-24 md:sticky md:top-10 md:self-start">
+      <LeadForm source="roof-size-tool" />
+    </aside>
+  </section>
+
+  <div id="faq">
+    <Faq items={FAQS} heading="Roof measuring, answered" accordion={true} />
+  </div>
+</BaseLayout>
+
+<style is:global>
+  .rt-pitch-active {
+    background: var(--color-gold-400);
+    border-color: var(--color-gold-400) !important;
+    color: var(--color-navy-950) !important;
+  }
+  /* The Google autocomplete web component fills its white pill shell.
+     color-scheme + the gmp-mat tokens pin it to our light palette even when
+     the visitor's device is in dark mode (otherwise it paints itself black). */
+  #rt-pac gmp-place-autocomplete {
+    display: block;
+    width: 100%;
+    color-scheme: light;
+    font-family: inherit;
+    --gmp-mat-color-surface: #ffffff;
+    --gmp-mat-color-on-surface: var(--color-ink-800);
+    --gmp-mat-color-on-surface-variant: var(--color-ink-500);
+    --gmp-mat-color-primary: var(--color-gold-600);
+    --gmp-mat-color-outline: transparent;
+    --gmp-mat-color-outline-variant: var(--color-navy-100);
+    background: #ffffff;
+  }
+</style>
+
+<script>
+  /**
+   * Roof measuring tool. Auto mode: address → lat/lng → /api/roof-measure
+   * (server-side Solar API). Manual mode: draw polygons on the satellite map;
+   * area × chosen pitch multiplier (real geometry — sqrt(1 + rise²/144), no
+   * hidden "waste" padding). Nothing typed here is stored server-side.
+   */
+  const root = document.getElementById("nv-rooftool");
+  const KEY = root?.dataset.key ?? "";
+
+  if (root && KEY) {
+    const el = (id: string) => document.getElementById(id)!;
+    const status = el("rt-status");
+    const setStatus = (t: string) => (status.textContent = t);
+    const fmt = (n: number) => Math.round(n).toLocaleString("en-US");
+
+    const state = {
+      mode: "auto" as "auto" | "manual",
+      address: "",
+      polygons: [] as any[],
+      pitchMult: 1.118,
+      lastResult: null as null | { squares: number; surface: number; source: string },
+    };
+
+    function loadMaps(key: string): Promise<any> {
+      return new Promise((resolve, reject) => {
+        const w = window as any;
+        if (w.google?.maps?.importLibrary) return resolve(w.google);
+        w.__nvMapsReady = () => resolve(w.google);
+        const s = document.createElement("script");
+        s.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}&v=weekly&loading=async&callback=__nvMapsReady`;
+        s.async = true;
+        s.onerror = () => reject(new Error("Google Maps failed to load"));
+        document.head.appendChild(s);
+      });
+    }
+
+    const pitchLabel = (deg: number) => {
+      const rise = Math.round(Math.tan((deg * Math.PI) / 180) * 12);
+      return `≈ ${rise}/12 (${deg}°)`;
+    };
+
+    function render(
+      surfaceFt2: number,
+      footprintFt2: number,
+      pitchText: string,
+      meta: string,
+      source: string,
+    ) {
+      const squares = surfaceFt2 / 100;
+      el("rt-squares").textContent = squares > 0 ? squares.toFixed(1) : "—";
+      el("rt-surface").textContent = surfaceFt2 > 0 ? `${fmt(surfaceFt2)} ft²` : "—";
+      el("rt-footprint").textContent = footprintFt2 > 0 ? `${fmt(footprintFt2)} ft²` : "—";
+      el("rt-pitchout").textContent = pitchText;
+      el("rt-meta").textContent = meta;
+      state.lastResult = squares > 0 ? { squares, surface: surfaceFt2, source } : null;
+      prefillLeadForm();
+    }
+
+    function prefillLeadForm() {
+      if (!state.lastResult) return;
+      const form = document.querySelector<HTMLElement>("#roof-lead");
+      const addressInput = form?.querySelector<HTMLInputElement>('input[name="address"]');
+      const notes = form?.querySelector<HTMLTextAreaElement>('textarea[name="notes"]');
+      if (addressInput && state.address && !addressInput.value) addressInput.value = state.address;
+      if (notes) {
+        notes.value = `Roof size tool: ≈ ${state.lastResult.squares.toFixed(1)} squares (~${fmt(state.lastResult.surface)} ft² surface)${state.address ? ` at ${state.address}` : ""} — ${state.lastResult.source} measurement.`;
+      }
+    }
+
+    function clearResults(prompt: string) {
+      render(0, 0, "—", "", "");
+      el("rt-meta").textContent = "";
+      setStatus(prompt);
+    }
+
+    loadMaps(KEY)
+      .then(async (google: any) => {
+        const { Map } = await google.maps.importLibrary("maps");
+        const placesLib = await google.maps.importLibrary("places");
+        await google.maps.importLibrary("geometry");
+
+        const map = new Map(el("rt-map"), {
+          center: { lat: 30.0799, lng: -95.4172 }, // Spring, TX
+          zoom: 17,
+          mapTypeId: "satellite",
+          tilt: 0,
+          streetViewControl: false,
+          fullscreenControl: false,
+          mapTypeControl: false,
+        });
+
+        // --- Address autocomplete (current Places web component) ---
+        const pacHost = el("rt-pac");
+        try {
+          const pac = new placesLib.PlaceAutocompleteElement({ includedRegionCodes: ["us"] });
+          pacHost.replaceChildren(pac);
+          const handleSelection = async (prediction: any, legacyPlace: any) => {
+            try {
+              let place = legacyPlace;
+              if (!place && prediction) {
+                place = prediction.toPlace();
+                await place.fetchFields({ fields: ["location", "formattedAddress"] });
+              }
+              const loc = place?.location;
+              if (!loc) return;
+              const lat = typeof loc.lat === "function" ? loc.lat() : loc.lat;
+              const lng = typeof loc.lng === "function" ? loc.lng() : loc.lng;
+              state.address = place.formattedAddress ?? "";
+              map.setCenter({ lat, lng });
+              map.setZoom(20);
+              await measureAuto(lat, lng);
+            } catch {
+              setStatus("Couldn't read that address — try picking it from the list again.");
+            }
+          };
+          pac.addEventListener("gmp-select", (ev: any) =>
+            handleSelection(ev.placePrediction, null),
+          );
+          pac.addEventListener("gmp-placeselect", (ev: any) => handleSelection(null, ev.place));
+        } catch {
+          // Autocomplete unavailable (key scope) — manual drawing still works.
+          setStatus("Address search is unavailable — pan to your home and trace the roof (✏️).");
+          enableManual();
+        }
+
+        // --- Auto measurement ---
+        // Primary: the site's one public key calls the Solar API straight
+        // from the browser (the key is domain-locked + quota-capped, so this
+        // is the whole configuration — "Wix-style" per the owner). If the
+        // optional server proxy (/api/roof-measure) is ever configured in
+        // Vercel, it is tried first and simply wins.
+        function solarReduce(data: any) {
+          const sp = data?.solarPotential;
+          const segs: any[] = Array.isArray(sp?.roofSegmentStats) ? sp.roofSegmentStats : [];
+          let roofM2 = 0;
+          let planM2 = 0;
+          let pitchWeighted = 0;
+          for (const seg of segs) {
+            const pitchDeg = Number(seg?.pitchDegrees ?? 0);
+            const area = Number(seg?.stats?.areaMeters2 ?? 0);
+            const ground = Number(seg?.stats?.groundAreaMeters2 ?? 0);
+            const cos = Math.cos((pitchDeg * Math.PI) / 180) || 1;
+            const segRoof = area || ground / cos;
+            roofM2 += segRoof;
+            planM2 += ground || area * cos;
+            pitchWeighted += pitchDeg * segRoof;
+          }
+          if (roofM2 <= 0 && sp?.wholeRoofStats) {
+            roofM2 = Number(sp.wholeRoofStats.areaMeters2 ?? 0);
+            planM2 = Number(sp.wholeRoofStats.groundAreaMeters2 ?? 0) || roofM2;
+          }
+          if (roofM2 <= 0) return null;
+          const M2_TO_FT2 = 10.7639;
+          const roofFt2 = roofM2 * M2_TO_FT2;
+          return {
+            available: true,
+            roofFt2: Math.round(roofFt2),
+            planFt2: Math.round((planM2 || roofM2) * M2_TO_FT2),
+            avgPitchDeg: segs.length > 0 ? Math.round(pitchWeighted / roofM2) : null,
+            segments: segs.length,
+            imageryDate: data?.imageryDate ?? null,
+          };
+        }
+
+        async function fetchMeasurement(lat: number, lng: number): Promise<any | null> {
+          // Optional server proxy first (present only when Vercel env is set).
+          try {
+            const res = await fetch(`/api/roof-measure?lat=${lat}&lng=${lng}`);
+            const data = await res.json();
+            if (data.available) return data;
+            if (data.reason && data.reason !== "unconfigured") return null; // real "no coverage"
+          } catch {
+            /* fall through to direct */
+          }
+          // Direct from the browser with the site's public, domain-locked key.
+          try {
+            const res = await fetch(
+              "https://solar.googleapis.com/v1/buildingInsights:findClosest" +
+                `?location.latitude=${lat}&location.longitude=${lng}` +
+                `&requiredQuality=LOW&key=${encodeURIComponent(KEY)}`,
+            );
+            if (!res.ok) return null;
+            return solarReduce(await res.json());
+          } catch {
+            return null;
+          }
+        }
+
+        async function measureAuto(lat: number, lng: number) {
+          setStatus("Measuring your roof from aerial imagery…");
+          try {
+            const data = await fetchMeasurement(lat, lng);
+            if (!data) {
+              setStatus(
+                "No aerial roof data for this address — trace your roof with the ✏️ tool instead.",
+              );
+              enableManual();
+              return;
+            }
+            state.mode = "auto";
+            disableManual();
+            const when = data.imageryDate?.year
+              ? ` Imagery from ${data.imageryDate.month ?? ""}/${data.imageryDate.year}.`.replace(
+                  " /",
+                  " ",
+                )
+              : "";
+            render(
+              data.roofFt2,
+              data.planFt2,
+              data.avgPitchDeg != null ? pitchLabel(data.avgPitchDeg) : "—",
+              `Measured across ${data.segments} roof plane${data.segments === 1 ? "" : "s"}.${when}`,
+              "aerial",
+            );
+            setStatus("Done — measured plane by plane. Not looking right? Trace it yourself (✏️).");
+          } catch {
+            setStatus("Measurement hiccup — trace your roof with the ✏️ tool instead.");
+            enableManual();
+          }
+        }
+
+        // --- Manual tracing: tap the roof's corners, no Google toolbar ---
+        // (The drawing-library toolbar proved unreliable and is clumsy on
+        // phones anyway; plain map clicks + an editable Polygon work
+        // everywhere and keep the buttons in our own UI.)
+        let tracing = false;
+        let currentPoly: any = null;
+        const traceBtnEls = () =>
+          Array.from(document.querySelectorAll<HTMLElement>(".rt-tracebtn"));
+        function enableManual() {
+          state.mode = "manual";
+          tracing = true;
+          el("rt-pitch").classList.remove("hidden");
+          el("rt-pitch").classList.add("flex");
+          traceBtnEls().forEach((b) => b.classList.remove("hidden"));
+          map.setOptions({ draggableCursor: "crosshair" });
+        }
+        function disableManual() {
+          tracing = false;
+          currentPoly = null;
+          el("rt-pitch").classList.add("hidden");
+          el("rt-pitch").classList.remove("flex");
+          traceBtnEls().forEach((b) => b.classList.add("hidden"));
+          map.setOptions({ draggableCursor: undefined });
+        }
+        map.addListener("click", (e: any) => {
+          if (!tracing || !e.latLng) return;
+          if (!currentPoly) {
+            currentPoly = new google.maps.Polygon({
+              map,
+              paths: [e.latLng],
+              editable: true,
+              fillColor: "#C9A26C",
+              fillOpacity: 0.25,
+              strokeColor: "#C9A26C",
+              strokeWeight: 2,
+            });
+            state.polygons.push(currentPoly);
+            const path = currentPoly.getPath();
+            ["insert_at", "remove_at", "set_at"].forEach((evt) =>
+              path.addListener(evt, computeManual),
+            );
+          } else {
+            currentPoly.getPath().push(e.latLng);
+          }
+          computeManual();
+        });
+        el("rt-undo").addEventListener("click", () => {
+          if (!currentPoly) return;
+          const path = currentPoly.getPath();
+          if (path.getLength() > 1) {
+            path.pop();
+          } else {
+            currentPoly.setMap(null);
+            state.polygons.pop();
+            currentPoly = null;
+          }
+          computeManual();
+        });
+        el("rt-newsection").addEventListener("click", () => {
+          currentPoly = null;
+          setStatus("New section started — tap its corners on the map.");
+        });
+        el("rt-clear").addEventListener("click", () => {
+          state.polygons.forEach((p) => p.setMap(null));
+          state.polygons = [];
+          currentPoly = null;
+          computeManual();
+        });
+        function computeManual() {
+          const M2_TO_FT2 = 10.7639;
+          let planM2 = 0;
+          state.polygons.forEach((poly) => {
+            const path = poly.getPath().getArray();
+            if (path.length >= 3) planM2 += google.maps.geometry.spherical.computeArea(path);
+          });
+          const planFt2 = planM2 * M2_TO_FT2;
+          const surface = planFt2 * state.pitchMult;
+          if (planFt2 > 0) {
+            render(
+              surface,
+              planFt2,
+              `your pick (×${state.pitchMult})`,
+              "Traced by you — tap to add corners, drag the dots to adjust, then pick the steepness.",
+              "hand-traced",
+            );
+            setStatus("Keep tapping corners or drag the dots to fine-tune — numbers update live.");
+          } else {
+            const n = currentPoly ? currentPoly.getPath().getLength() : 0;
+            setStatus(
+              n > 0
+                ? `${n} corner${n === 1 ? "" : "s"} placed — a shape needs at least 3.`
+                : "Tap your roof's corners on the map, one by one — the outline builds as you go.",
+            );
+          }
+        }
+
+        // --- Pitch chips ---
+        document.querySelectorAll<HTMLButtonElement>(".rt-pitch-btn").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            document
+              .querySelectorAll(".rt-pitch-btn")
+              .forEach((b) => b.classList.remove("rt-pitch-active"));
+            btn.classList.add("rt-pitch-active");
+            state.pitchMult = Number(btn.dataset.mult) || 1.118;
+            computeManual();
+          });
+        });
+
+        // --- Buttons ---
+        el("rt-draw").addEventListener("click", () => {
+          enableManual();
+          computeManual();
+        });
+        el("rt-reset").addEventListener("click", () => {
+          state.polygons.forEach((p) => p.setMap(null));
+          state.polygons = [];
+          state.address = "";
+          state.mode = "auto";
+          disableManual();
+          clearResults("Start typing and pick your address — we'll find your roof.");
+        });
+      })
+      .catch(() => {
+        setStatus(
+          "The map couldn't load. Refresh to retry — or skip it: measurement is free in person.",
+        );
+      });
+  }
+</script>
