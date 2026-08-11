@@ -37,7 +37,8 @@ sitewide (enforced by tests/unit/seo-content.test.ts).
 | `/warranty`                      | roof warranty explained / IKO warranty tiers        | indexable                            |
 | `/roof-design-center`            | IKO Dynasty/Nordic / roof colors / design your roof | indexable (interactive product page) |
 | `/certifications`                | IKO ROOFPRO / roofing certifications                | indexable                            |
-| `/financing`                     | roof financing                                      | noindex until owner supplies terms   |
+| `/financing`                     | roof financing                                      | LIVE 2026-08 (owner-supplied terms)  |
+| `/roof-size-calculator`          | roof size calculator                                | noindex until Maps browser key set   |
 | `/team`                          | (brand)                                             | noindex until real people            |
 | `/gallery`                       | (brand) / our work                                  | indexable (real project photos)      |
 | `/projects`, `/projects/*`       | Northvale roofing projects / case studies           | indexable (real homeowner stories)   |
