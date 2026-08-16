@@ -2,6 +2,7 @@
 
 Lean operating guide for anyone (human or AI) working in this repo. Read this
 before adding pages or content. Full plan: `PLAN.md`. Progress: `TASKS.md`.
+Non-technical contributors start with `ONBOARDING.md`.
 
 ## What this is
 

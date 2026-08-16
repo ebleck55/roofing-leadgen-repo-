@@ -18,6 +18,25 @@ Ordered by the point in the launch path where they're blocking. Check off as the
 > automation, so it stays a top unblock. See `docs/decision-log.md` (2026-07-04) for the
 > reasoning behind this re-sequencing.
 
+## Team onboarding — new website helper (added 2026-07-28)
+
+Grant the new (non-technical) team member access. Their guide is `ONBOARDING.md`;
+one-time steps for you, in order:
+
+- [ ] **Invite them on GitHub:** repo → Settings → Collaborators → "Add people" →
+      their GitHub username. (They accept the email invite.)
+- [ ] **Protect `main`:** repo → Settings → Rules → Rulesets → "New branch ruleset" →
+      name it `protect-main`, target the default branch, enable "Require a pull request
+      before merging" + "Block force pushes", enforcement "Active". This makes the
+      "never push to main" rule enforced for everyone (you included) instead of an
+      honor system.
+- [ ] **Open up Vercel previews:** Vercel dashboard → project → Settings →
+      Deployment Protection → turn **Vercel Authentication off**. Hobby has no team
+      seats, so this is how they'll view preview links. (Repo is public, so previews
+      being link-viewable exposes nothing new; production is unaffected.)
+- [ ] **Send them `ONBOARDING.md`** (or the Claude Code share link from the
+      2026-07-28 session) and have them do the two one-time setup steps in §4.
+
 ## Tier 0 — phone-ringers & speed-to-lead (do these first; they produce near-term revenue)
 
 These are the fastest path to a ringing phone and mostly live _outside the codebase_.

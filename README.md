@@ -23,6 +23,7 @@ Website + lead-gen + content engine for a premium residential roofing business s
 
 ## Key docs
 
+- [`ONBOARDING.md`](ONBOARDING.md) — start here if you're new: non-technical guide to making website updates via Claude Code
 - [`TASKS_FOR_ERIC.md`](TASKS_FOR_ERIC.md) — every open ask that needs a human
 - [`STATUS.md`](STATUS.md) — phase-end summaries
 - [`docs/brand-voice.md`](docs/brand-voice.md) — local-neighborly + premium-trusted + fast-response-urgency
